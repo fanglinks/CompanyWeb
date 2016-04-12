@@ -1,0 +1,9 @@
+System.Data.SqlClient.SqlException (0x80131904): 将截断字符串或二进制数据。
+语句已终止。
+   在 LYSC.CompanyWeb.DBUtitly.DbHelperSQL.GetSingle(String SQLString, SqlParameter[] cmdParms) 位置 f:\heima\practice\LYSC.CompanyWeb\LYSC.CompanyWeb.DBUtitly\DbHelperSQL.cs:行号 698
+   在 LYSC.CompanyWeb.DAL.HKSJ_USERS.Add(HKSJ_USERS model) 位置 f:\heima\practice\LYSC.CompanyWeb\LYSC.CompanyWeb.DAL\HKSJ_USERS.cs:行号 71
+   在 LYSC.CompanyWeb.BLL.HKSJ_USERS.Add(HKSJ_USERS model) 位置 f:\heima\practice\LYSC.CompanyWeb\LYSC.CompanyWeb.BLL\HKSJ_USERS.cs:行号 39
+   在 LYSC.CompanyWeb.UI.admin.users.AddUserList.ProcessRequest(HttpContext context) 位置 f:\heima\practice\LYSC.CompanyWeb\LYSC.CompanyWeb.UI\admin\users\AddUserList.ashx.cs:行号 34
+   在 System.Web.HttpApplication.CallHandlerExecutionStep.System.Web.HttpApplication.IExecutionStep.Execute()
+   在 System.Web.HttpApplication.ExecuteStep(IExecutionStep step, Boolean& completedSynchronously)
+ClientConnectionId:c4b920dc-8b0e-440c-b5ab-c7aa0ef1e1af

@@ -1,0 +1,6 @@
+System.FormatException: 该字符串未被识别为有效的 DateTime。有一个未知单词(从索引 0 处开始)。
+   在 System.DateTime.Parse(String s, IFormatProvider provider)
+   在 System.Convert.ToDateTime(String value)
+   在 LYSC.CompanyWeb.UI.admin.Relationship.AddRelationShipList.ProcessRequest(HttpContext context) 位置 f:\heima\practice\LYSC.CompanyWeb\LYSC.CompanyWeb.UI\admin\Relationship\AddRelationShipList.ashx.cs:行号 34
+   在 System.Web.HttpApplication.CallHandlerExecutionStep.System.Web.HttpApplication.IExecutionStep.Execute()
+   在 System.Web.HttpApplication.ExecuteStep(IExecutionStep step, Boolean& completedSynchronously)

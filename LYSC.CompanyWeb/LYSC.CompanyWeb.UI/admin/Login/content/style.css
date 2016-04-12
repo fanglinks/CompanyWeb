@@ -1,0 +1,85 @@
+/* CSS Document */
+
+body,td,th {
+	font-size: 12px;
+	color: #000000;
+}
+body {
+	margin-left: 0px;
+	margin-top: 0px;
+	margin-right: 0px;
+	margin-bottom: 0px;
+}
+a:link {
+	color: #000000;
+	text-decoration: none;
+}
+a:visited {
+	text-decoration: none;
+	color: #000000;
+}
+a:hover {
+	text-decoration: underline;
+	color: #003366;
+}
+a:active {
+	text-decoration: none;
+	color: #000000;
+}
+.login_text {
+	font-family: "ºÚÌå", Arial, Helvetica, sans-serif;
+	font-size: 20px;
+	font-weight: 100;
+	color: #666666;
+}
+.box1 {
+	background-color: #E8EFFF;
+	border-right-width: 1px;
+	border-bottom-width: 1px;
+	border-left-width: 1px;
+	border-right-style: solid;
+	border-bottom-style: solid;
+	border-left-style: solid;
+	border-right-color: #85ADE1;
+	border-bottom-color: #85ADE1;
+	border-left-color: #85ADE1;
+}
+.box2 {
+	background-color: #FFFFFF;
+	border-right-width: 1px;
+	border-bottom-width: 1px;
+	border-left-width: 1px;
+	border-right-style: solid;
+	border-bottom-style: solid;
+	border-left-style: solid;
+	border-right-color: #9CBDE6;
+	border-bottom-color: #9CBDE6;
+	border-left-color: #9CBDE6;
+}
+.white {
+	font-size: 12px;
+	line-height: 23px;
+	color: #FFFFFF;
+}
+.white a:link {
+	color: #FFFFFF;
+	text-decoration: none;
+}
+.white a:visited {
+	text-decoration: none;
+	color: #FFFFFF;
+}
+.white a:hover {
+	text-decoration: underline;
+	color: #FFFFFF;
+}
+.white a:active {
+	text-decoration: none;
+	color: #FFFFFF;
+}
+.title_text {
+	font-size: 12px;
+	line-height: 23px;
+	color: #005AAA;
+	font-weight: bold;
+}

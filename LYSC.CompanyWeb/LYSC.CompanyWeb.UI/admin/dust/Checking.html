@@ -1,0 +1,61 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title></title>
+    
+    <link href="../easyUI/themes/default/easyui.css" rel="stylesheet" />
+    <link href="../easyUI/themes/icon.css" rel="stylesheet" />
+
+    <script type="text/javascript" src="../easyUI/jquery-1.8.0.min.js"></script>
+    <script type="text/javascript" src="../easyUI/jquery.easyui.min.js"></script>
+    <script type[="text/javascript" src="../easyUI/locale/easyui-lang-zh_CN.js"></script>
+    <script type="text/javascript">
+        //表单提交  
+        $('#myForm').form({
+            url: '/ProcessServlet',
+            onSubmit: function () {
+                return $(this).form('validate');
+            },
+            success: function (data) {
+                alert(data);
+            }
+        });
+    </script>
+
+</head>
+<body>
+    <form id="myForm" method="post">  
+        <table align="center" style="width:400px;height:auto;margin-top: 20px">    
+            <tr>                                
+                <td align="right">命令：</td>      
+                <td><input id="cmd" name="cmd" style="width: 200px;" class="easyui-validatebox" required="true" validType="length[5,12]" missingMessage="不能为空"/></td>   
+            </tr>  
+            <tr>                
+                <td align="right">描述：</td>  
+                 <td><input id="depict" name="depict" style="width: 200px;" class="easyui-validatebox" required="true" validType="length[5,12]" missingMessage="不能为空"/></td>   
+            </tr>  
+            <tr>                 
+                <td align="right">类型：</td>                 
+                <td><input id="type" style="width: 200px" class="easyui-validatebox"  
+                    url="data/editHealthCheckCombobox_data.json" valueField="id"  
+                    textField="text" /></td>   
+            </tr>   
+            <tr>  
+                <td align="right">分数：</td>                 
+                <td><input id="score" name="score" style="width: 200px" valueField="number"/></td>   
+            </tr>  
+            <tr>   
+                <td align="right">使用状况：</td>                 
+                <td><input id="isUse" style="width: 200px" class="easyui-validatebox"/></td>   
+            </tr>   
+            <tr>   
+                <td align="center" colspan="2">  
+                    <input type="submit"  value="提交"/>  
+                    <input type="reset" value="重置"/>  
+                </td>                 
+            </tr>  
+        </table>  
+    </form>  
+</body>
+</html>

@@ -1,0 +1,9 @@
+System.ArgumentOutOfRangeException: 索引超出范围。必须为非负值并小于集合大小。
+参数名: index
+   在 System.Collections.ArrayList.get_Item(Int32 index)
+   在 System.Collections.Specialized.NameObjectCollectionBase.BaseGet(Int32 index)
+   在 System.Web.HttpFileCollection.Get(Int32 index)
+   在 System.Web.HttpFileCollection.get_Item(Int32 index)
+   在 LYSC.CompanyWeb.UI.admin.dust.ProcessImgUpload.ProcessRequest(HttpContext context) 位置 f:\heima\practice\LYSC.CompanyWeb\LYSC.CompanyWeb.UI\admin\dust\ProcessImgUpload.ashx.cs:行号 18
+   在 System.Web.HttpApplication.CallHandlerExecutionStep.System.Web.HttpApplication.IExecutionStep.Execute()
+   在 System.Web.HttpApplication.ExecuteStep(IExecutionStep step, Boolean& completedSynchronously)

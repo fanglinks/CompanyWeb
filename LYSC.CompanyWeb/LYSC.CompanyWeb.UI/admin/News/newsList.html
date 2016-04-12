@@ -1,0 +1,587 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>新闻列表后台页面</title>
+    <!--引入CSS加Jquery文件-->
+    <link href="../easyUI/themes/default/easyui.css" rel="stylesheet" />
+    <link href="../easyUI/themes/icon.css" rel="stylesheet" />
+    <link href="themes/default/default.css" rel="stylesheet" />
+    <link href="plugins/code/prettify.css" rel="stylesheet" />
+
+    <!--要添加次样式，必须重新配置Table控件的内容-->
+    <!--<link href="../css/tableStyle.css" rel="stylesheet" />-->
+    <script type="text/javascript" src="../easyUI/jquery-1.8.0.min.js"></script>
+    <script type="text/javascript" src="../easyUI/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="../easyUI/locale/easyui-lang-zh_CN.js"></script>
+    <script type="text/javascript" src="../../Scripts/MyAjaxForm.js"></script>
+    <script type="text/javascript" src="../easyUI/datapattern2.js"></script>
+
+    <!--引入富文本编辑器的使用-->
+    <script type="text/javascript" src="../kindeditor-4.1.3/kindeditor.js"></script>
+    <script type="text/javascript" src="../kindeditor-4.1.3/lang/zh_CN.js"></script>
+    <script type="text/javascript" src="../kindeditor-4.1.3/plugins/code/prettify.js"></script>
+    <style type="text/css">
+        #tblAddNews {
+            width: 650px;
+        }
+
+        #tblUpdateNews {
+            width: 600px;
+        }
+    </style>
+
+
+    <script type="text/javascript">
+
+        //富文本编辑器使用
+        KindEditor.ready(function (K) {
+            window.editorAdd = K.create('#txtContent', {
+                cssPath: '../kindeditor-4.1.3/plugins/code/prettify.css',
+                uploadJson: 'upload_json.ashx',
+                fileManagerJson: 'file_manager_json.ashx',
+                allowFileManager: true,
+                afterCreate: function () {
+                    var self = this;
+                    K.ctrl(document, 13, function () {//添加保存信息的组合键ctrl+z
+                        self.sync();//同步富文本编辑器里的内容到textarea中去
+                        K('form[name="AddNewsContent"]')[0].submit();
+                    });
+                    K.ctrl(self.edit.doc, 13, function () {
+                        self.sync();
+                        K('form[name="AddNewsContent"]')[0].submit();
+                    });
+                }
+            });
+            window.editorUpdate = K.create('#txtUpdateContent', {
+                cssPath: '../kindeditor-4.1.3/plugins/code/prettify.css',
+                uploadJson: 'upload_json.ashx',
+                fileManagerJson: 'file_manager_json.ashx',
+                allowFileManager: true,
+                afterCreate: function () {
+                    var self = this;
+                    K.ctrl(document, 13, function () {
+                        self.sync();
+                        K('form[name="txtUpdateContent"]')[0].submit();
+                    });
+                    K.ctrl(self.edit.doc, 13, function () {
+                        self.sync();
+                        K('form[name="txtUpdateContent"]')[0].submit();
+                    });
+                }
+            });
+
+            prettyPrint();
+
+            //获取添加文本框内容
+            function getEditorAddData() {
+                return editorAdd.html();     //使用上面定义的window.editorAdd的方法的HTML代码   韩迎龙注释
+            }
+            //给富文本框赋值
+            function setEditorUpdateData(data) {
+                editorUpdate.html(data);   //富文本框的使用方法:window.editorUpdate   韩迎龙注释
+            }
+
+            $(function () {
+                //异步加载显示所有的新闻
+                initNewsList();
+
+                //实现上传图片的功能,异步实现上传
+                upLoadImgFile();
+
+                //实现添加功能
+                AddNewsList();
+
+
+                //实现对新闻数据的修改信息
+                UpdateNewsList();
+
+            });
+
+            //异步加载显示所有的新闻列表
+            function initNewsList() {
+                $('#test').datagrid({
+                    url: 'NewsListShowJson.ashx',
+                    iconCls: 'icon-save',
+                    width: 980,
+                    fit: true,
+                    height: 420,
+                    nowrap: true,
+                    autoRowHeight: false,
+                    striped: true,
+                    collapsible: true,
+                    sortName: 'ID',
+                    sortOrder: 'asc',
+                    remoteSort: false,
+                    idField: 'ID',
+                    pagination: true,
+                    rownumbers: true,
+                    onLoadError: function () {  //当页面错误的时候跳转页面
+                        window.location.href = '../../Error.html';
+                    },
+                    columns: [[
+                        { field: 'ck', checkbox: true, width: 50, align: 'left', rowspan: 2 },
+                        { field: 'ID', title: '编号', width: 40, sortable: true },
+                        { field: 'title', title: '新闻标题', width: 240 },
+                        { field: 'type', title: '新闻类型', width: 80 },
+                        {
+                            field: 'Date', title: '添加日期', width: 150,
+                            formatter: function (value, row, index) {
+                                return (eval(value.replace(/\/Date\((\d+)\)\//gi, "new Date($1)"))).pattern("yyyy-M-d h:m:s.S");
+                            }
+                        },
+                        { field: 'people', title: '撰写人', width: 100 },
+                        { field: 'picUrl', title: '图片地址', width: 330 }
+                    ]],
+                    toolbar: [{
+                        id: 'btnadd',
+                        text: '添加',
+                        iconCls: 'icon-add',
+                        handler: function () {
+                            $('#AddNewsDialog').dialog('open').dialog('setTitle', '添加新闻信息');
+
+                            Clear();
+
+
+                        }
+                    }, {
+                        id: 'btnedit',
+                        text: '修改',
+                        iconCls: 'icon-edit',
+                        handler: function () {
+                            var RowUpdateNewsID = $('#test').datagrid('getSelections');
+
+                            if (RowUpdateNewsID.length == 1) {
+                                //实现绑定数据显示
+                                BindNewsList();
+
+                                $("#UpdateNewsDialog").dialog('open').dialog('setTitle', '修改新闻信息');
+
+                            }
+                            else {
+                                $.messager.alert("友情提示", "每次只能修改一条，你已经选择了<font color='red'  size='6'>" + RowUpdateNewsID.length + "</font>条");
+                            }
+                        }
+                    }, '-', {
+                        id: 'btndelete',
+                        text: '删除',
+                        iconCls: 'icon-no',
+                        handler: function () {
+
+                            var RowDeleteNewsID = $('#test').datagrid("getSelections");
+                            if (RowDeleteNewsID.length == 1) {
+                                $.messager.confirm("删除信息", "您确认删除该条信息吗？", function (deletenews) {
+                                    if (deletenews) {
+                                        $.post("DeleteNewsJson.ashx", { newsID: RowDeleteNewsID[0].ID }, function (data) {
+                                            if (data == "OK") {
+                                                $("#test").datagrid('reload') //重新刷新整个页面
+                                                alert("删除成功");
+
+                                                //这里要将上次删除的Id清空，否则下次再删除的时候会报错
+                                                RowDeleteNewsID.length = "";
+                                            }
+                                            else {
+                                                alert("删除失败");
+                                            }
+
+
+                                        });
+                                    }
+
+                                });
+                            }
+                            else {
+                                $.messager.alert("友情提示", "每次只能删除一行，你已经选择了<font color='red' size='6'>" + RowDeleteNewsID.length + "</font>行");
+                            }
+                        }
+                    }, {
+                        id: 'btndetail',
+                        text: '详情',
+                        iconCls: 'icon-help',
+                        handler: function () {
+                            var RowDetailNewsID = $('#test').datagrid('getSelections');
+
+                            if (RowDetailNewsID.length == 1) {
+                                //实现绑定数据显示
+                                BindDetailNewsList();
+
+                                $("#DetailNewsDialog").dialog('open').dialog('setTitle', '新闻详细信息');
+
+                            }
+                            else {
+                                $.messager.alert("友情提示", "每次只能显示一条新闻，你已经选择了<font color='red'  size='6'>" + RowDetailNewsID.length + "</font>条");
+                            }
+                        }
+                    }]
+                });
+            }
+
+            //异步实现添加新闻信息
+            function AddNewsList() {
+                $("#btnAddNews").click(function () {
+
+                    //韩迎龙添加
+                    var form = $("#formAdd").form('validate');
+                    if (form == false) {
+                        return false;
+                    }
+
+                    var title = $("#txtTitle").val();
+                    //var content = $("#txtContent").val();
+                    //调用父文本框的方法来实现的           -------------韩迎龙注释
+                    var content = getEditorAddData();  
+                    var type = $("#txtType").val();
+                    var Date = $("#txtDate").datebox('getValue');
+                    var people = $("#txtPeople").val();
+                    var picUrl = $("#txtPicUrl").val();
+                    //异步实现构造添加参数,给后台能传过去值
+                    var AddNewsListParam = "title=" + title + "&content=" + content + "&type=" +
+                        type + "&Date=" + Date + "&people=" + people + "&picUrl=" + picUrl;
+                    //Ajax异步实现加载
+                    $.ajax({
+                        url: "AddNewsList.ashx",
+                        data: AddNewsListParam,
+                        type: "post",
+                        success: function (data) {
+                            if (data == "OK") {
+                                alert("添加成功");
+                                $('#AddNewsDialog').dialog('close');
+                                $("#test").datagrid('reload');
+                            }
+                            else {
+                                alert("添加失败");
+                            }
+                        }
+                    })
+                });
+            };
+
+            //异步实现修改新闻信息,btnUpdate
+            function UpdateNewsList() {
+                var RowUpdateNewsID = $('#test').datagrid('getSelections');
+                //首先执行加载绑定数据显示在页面上面
+                $("#btnUpdateNews").click(function () {
+
+                    //韩迎龙添加
+                    var form = $("#Form1").form('validate');
+                    if (form == false) {
+                        return false;
+                    }
+
+                    //构造要传递的参数
+                    var postNewsUpdate = {
+                        ID: RowUpdateNewsID[0].ID,
+                        title: $("#txtUpdateTitle").val(),
+
+                        content: editorUpdate.html(),    //修改的时候使用  韩迎龙注释
+                        
+                        type: $("#txtUpdateType").val(),
+                        Date: $("#txtUpdateDate").datebox('getValue'),
+                        people: $("#txtUpdatePeople").val(),
+                        picUrl: $("#txtUpdatePicUrl").val()
+                    };
+
+                    //实现异步修改数据
+                    $.post("UpdateNewsList.ashx", postNewsUpdate, function (data) {
+                        if (data == "OK") {
+                            alert("修改成功");
+                            $("#UpdateNewsDialog").dialog('close');
+                            $("#test").datagrid("reload");
+                        }
+                        else {
+                            alert("修改失败，请您检查");
+                        }
+                    });
+                });
+            };
+
+            //异步绑定修改新闻的时候显示数据
+            function BindNewsList() {
+                var RowUpdateNewsID = $('#test').datagrid('getSelections')[0];
+
+                $("#txtUpdateNewsID").val(RowUpdateNewsID.ID);
+                $("#txtUpdateTitle").val(RowUpdateNewsID.title);
+
+
+                //$("#txtUpdateContent").val(RowUpdateNewsID.content);
+                //给修改div的富文本框中赋值
+                //editorUpdate.html("aaaaaaaaaaaaaaaaaa");
+                editorUpdate.html(RowUpdateNewsID.content);
+                // setEditorAddData(RowUpdateNewsID.content);
+
+                $("#txtUpdateType").val(RowUpdateNewsID.type);
+
+                //绑定时间 这里使用了datebox
+                var str = (eval(RowUpdateNewsID.Date.replace(/\/Date\((\d+)\)\//gi, "new Date($1)"))).pattern("yyyy-M-d h:m:s");
+                $("#txtUpdateDate").datebox('setValue', str);
+
+
+                $("#txtUpdatePeople").val(RowUpdateNewsID.people);
+                $("#txtUpdatePicUrl").val(RowUpdateNewsID.picUrl);
+            }
+
+             //异步绑定新闻详情层显示数据
+            function BindDetailNewsList() {
+                var RowDetailNewsID = $('#test').datagrid('getSelections')[0];
+
+                //$("#txtDetailNewsID").val(RowDetailNewsID.ID);
+                $("#txtDetailTitle").val(RowDetailNewsID.title);
+                $("#txtDetailContent").html(RowDetailNewsID.content);
+                $("#txtDetailType").val(RowDetailNewsID.type);
+
+                //绑定时间 这里使用了datebox
+                var str = (eval(RowDetailNewsID.Date.replace(/\/Date\((\d+)\)\//gi, "new Date($1)"))).pattern("yyyy-M-d h:m:s");
+                $("#txtDetailDate").datebox('setValue', str);
+
+                $("#txtDetailPeople").val(RowDetailNewsID.people);
+                //$("#txtDetailPicUrl").val(RowDetailNewsID.picUrl);
+                $("#txtDetailPicUrl").attr('src', RowDetailNewsID.picUrl);
+
+            }
+
+            //王卯东  当单击添加的时候清空文本框中的值
+            function Clear() {
+
+                $("#txtTitle").val("");
+                $("#txtContent").val("");
+                $("#txtType").val("");
+                $("#txtDate").datebox('setValue', '');
+                $("#txtPeople").val("");
+                $("#txtPicUrl").val("");
+
+            };
+
+            //实现上传图片的功能,异步实现上传
+            function upLoadImgFile() {
+                $("#btnUploadImage").click(function () {
+                    $("#formAdd").ajaxSubmit({
+                        url: 'ProcessImgLoad.ashx',
+                        type: 'post',
+                        success: function (date) {
+                            $("#result").append("<img src='images/" + date + "' width='100px' height='100px' />");
+                        }
+                    });
+                });
+            }
+
+        });         //KindEditor结束
+    </script>
+
+</head>
+<body class="easyui-layout">
+    <div data-options="region:'north',split:true" title="管理员登录" align="center" style="height: 100px; padding: 10px;">
+        <h1>黑马训练营第三期第九组[王卯东,唐兰文,郭张浩,李宏利，韩迎龙,肖攀]开发，欢迎您的光临</h1>
+    </div>
+
+    <!--左边栏的导航-->
+    <div data-options="region:'west',split:true" title="左导航" style="width: 180px; padding: 1px; overflow: hidden;">
+        <div class="easyui-accordion" data-options="fit:true,border:false">
+            <!-- 第一个显示区域-->
+            <div title="相识黑马" data-options="selected:true" style="padding: 10px; overflow: auto;">
+                <p><a href="../users/adminUser.html">用户管理</a></p>
+                <p><a href="../Relationship/RelationShipShowJson.html">客服管理</a></p>
+                <p><a href="../Client/TypicClient.htm">典型客户</a></p>
+                <p><a href="../CompanyCulture/CorporateCulture.html">企业文化</a></p>
+                <p><a href="newsList.html">新闻管理</a></p>
+                <p><a href="../Employees/EmployeesList.html">人才管理</a></p>
+            </div>
+
+            <!-- 第二个显示区域-->
+            <div title="网站介绍" style="padding: 10px;">
+                <p><a href="../../Index.html" target="_blank">公司首页</a></p>
+                <p><a href="../../Company/Company.aspx" target="_blank">相识黑马</a></p>
+                <p><a href="../../Product/Product.aspx" target="_blank">软件产品</a></p>
+                <p><a href="../../News/News.aspx" target="_blank">新闻中心</a></p>
+                <p><a href="../../Service/Service.aspx" target="_blank">客服服务</a></p>
+                <p><a href="../../Employment/Employment.aspx" target="_blank">人才招聘</a></p>
+                <p><a href="../../Client/Client.aspx" target="_blank">典型客户</a></p>
+                <p><a href="../../Contact/Contact.aspx" target="_blank">联系我们</a></p>
+            </div>
+
+            <!-- 第三个个显示区域-->
+            <div title="小组风采" style="padding: 10px">
+                <!--,唐兰文,郭张浩,李宏利，韩迎龙,肖攀-->
+                <p><a href="javascript:void(0)">组长王卯东</a></p>
+                <p><a href="javascript:void(0)">组员唐兰文</a></p>
+                <p><a href="javascript:void(0)">组员郭张浩</a></p>
+                <p><a href="javascript:void(0)">组员李宏利</a></p>
+                <p><a href="javascript:void(0)">组员韩迎龙</a></p>
+                <p><a href="javascript:void(0)">组员肖攀</a></p>
+                <p><a href="javascript:void(0)">黑马知己</a></p>
+            </div>
+
+        </div>
+    </div>
+
+    <!--存放内容的主区域-->
+    <div data-options="region:'center'" title="新闻管理操作区域" style="overflow: hidden;">
+        <table id="test"></table>
+    </div>
+
+    <!--底部版权信息的导航-->
+    <div data-options="region:'south',split:true"
+        style="height: 40px; padding: 10px; background: #efefef;" align="center">
+        版权信息  &copy 黑马三期第九组  && WMD，TLW，GZH，LHL，HYL，XP
+    </div>
+
+    <!--设置添加新闻的弹出层-->
+    <div id="AddNewsDialog" class="easyui-dialog" style="width: 700px; height: 550px; padding: 10px 20px"
+        closed="true" buttons="#dlg-buttons" align="center">
+        <form id="formAdd" method="post" novalidate="novalidate" enctype="multipart/form-data">
+            <table id="tblAddNews">
+                <tr>
+                    <th colspan="4">添加新闻信息</th>
+                </tr>
+                <tr>
+                    <td>
+                        <label for="txtTitle">新闻标题：</label></td>
+                    <td>
+                        <input class="easyui-validatebox" type="text" id="txtTitle" name="txtTitle" data-options="required:true,validType:'length[1,20]'" /></td>
+                    <td>
+                        <label for="txtType">新闻类型</label></td>
+                    <td>
+                        <input class="easyui-validatebox" type="text" id="txtType" name="txtType" value="1       " data-options="required:true,validType:'length[1,4]'" /></td>
+                </tr>
+                <tr>
+                    <td>
+                        <label for="txtDate">添加日期</label></td>
+                    <td>
+                        <input class="easyui-datebox" type="text" id="txtDate" name="txtDate" required="required" /></td>
+                    <td>
+                        <label for="txtPeople">撰写人</label></td>
+                    <td>
+                        <input class="easyui-validatebox" type="text" id="txtPeople" name="txtPeople" data-options="required:true,validType:length[1,20]" /></td>
+                </tr>
+                <tr>
+                    <td>
+                        <label for="txtContent">新闻内容：</label>
+                    </td>
+                    <td colspan="3">
+                        <textarea id="txtContent" name="AddNewsContent" style="width: 550px; height: 300px; visibility: hidden;" runat="server"></textarea>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label for="txtCardNo">图片地址：</label></td>
+                    <td>
+                        <input type="file" name="img" id="txtPicUrl" /><input type="button" id="btnUploadImage" value="上传图片" /></td>
+                    <td colspan="2" id="result" align="center"></td>
+                </tr>
+                <tr>
+                    <td colspan="4" align="center">
+                        <a href="javascript:void(0)" class="easyui-linkbutton" id="btnAddNews" iconcls="icon-ok">添加</a>
+                        <a href="javascript:void(0)" class="easyui-linkbutton" iconcls="icon-cancel" onclick="javascript:$('#AddNewsDialog').dialog('close')">关闭</a>
+                    </td>
+                </tr>
+            </table>
+        </form>
+        <div align="left">
+        </div>
+    </div>
+
+    <!--设置修改新闻的弹出层-->
+    <div id="UpdateNewsDialog" class="easyui-dialog" style="width: 700px; height: 550px; padding: 10px 20px"
+        closed="true" buttons="#dlg-buttons" align="center">
+        <form id="Form1" method="post" novalidate="novalidate">
+            <table id="tblUpdateNews">
+                <tr>
+                    <th colspan="4">修改新闻信息</th>
+                </tr>
+                <tr>
+                    <td>
+                        <label for="txtUpdateTitle">新闻标题：</label></td>
+                    <td>
+                        <input class="easyui-validatebox" type="text" id="txtUpdateTitle" name="txtUpdateTitle" data-options="required:true,validType:length[1,20]" /></td>
+                    <td>
+                        <label for="txtUpdateType">新闻类型</label></td>
+                    <td>
+                        <input class="easyui-validatebox" type="text" id="txtUpdateType" name="txtUpdateType" data-options="required:true,validType:length[1,4]" /></td>
+                </tr>
+                <tr>
+                    <td>
+                        <label for="txtUpdateDate">添加日期</label></td>
+                    <td>
+                        <input class="easyui-datebox" type="text" id="txtUpdateDate" name="txtUpdateDate" required="required" /></td>
+                    <td>
+                        <label for="txtUpdatePeople">撰写人</label></td>
+                    <td>
+                        <input class="easyui-validatebox" type="text" id="txtUpdatePeople" name="txtUpdatePeople" data-options="required:true,validType:length[1,4]" /></td>
+                </tr>
+                <tr>
+                    <td>
+                        <label for="txtUpdatePicUrl">图片地址：</label></td>
+                    <td colspan="3">
+                        <input class="easyui-validatebox" type="text" id="txtUpdatePicUrl" name="txtUpdatePicUrl" /></td>
+                </tr>
+
+                <tr>
+                    <td>
+                        <label for="txtUpdateContent">新闻内容：</label>
+                    </td>
+                    <td colspan="3">
+                        <textarea id="txtUpdateContent" name="txtUpdateContent" cols="200" rows="100" style="width: 500px; height: 300px; visibility: hidden;" runat="server"></textarea>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="4" align="center">
+                        <a href="javascript:void(0)" class="easyui-linkbutton" id="btnUpdateNews" iconcls="icon-ok">修改</a>
+                        <a href="javascript:void(0)" class="easyui-linkbutton" iconcls="icon-cancel" onclick="javascript:$('#UpdateNewsDialog').dialog('close')">关闭</a>
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </div>
+
+    <!--设置新闻详情的弹出层-->
+    <div id="DetailNewsDialog" class="easyui-dialog" style="width: 700px; height: 550px; padding: 10px 20px"
+        closed="true" buttons="#dlg-buttons" align="center">
+        <form id="Form2" method="post" novalidate="novalidate">
+            <table id="Table1">
+                <tr>
+                    <th colspan="4">新闻详细信息</th>
+                </tr>
+                <tr>
+                    <td>
+                        <label for="txtDetailTitle">新闻标题：</label></td>
+                    <td>
+                        <input type="text" name="txtDetailTitle" id="txtDetailTitle" readonly="true"  />
+                    <td>
+                        <label for="txtDetailType">新闻类型</label></td>
+                    <td>
+                        <input type="text" name="txtDetailType" id="txtDetailType" readonly="true"  />
+                </tr>
+                <tr>
+                    <td>
+                        <label for="txtDetailDate">添加日期</label></td>
+                    <td>
+                        <input class="easyui-datebox" type="text" id="txtDetailDate" name="txtDetailDate" required="required" /></td>
+                    <td>
+                        <label for="txtDetailPeople">撰写人</label></td>
+                    <td>
+                        <input type="text" name="txtDetailPeople" id="txtDetailPeople" readonly="true"  />
+                </tr>
+                <tr>
+                    <td>
+                        <label for="txtDetailContent">新闻内容：</label>
+                    </td>
+                    <td colspan="3">
+                        <div  id="txtDetailContent" name="txtDetailContent" style="width: 550px; height: 300px; overflow:scroll; border:1px solid red">
+                        </div>
+                    </td>
+                </tr>
+              <tr>
+                    <td>
+                        <label for="txtDetailPicUrl">图片地址：</label></td>
+                    <td colspan="3">
+                        <img src="" id="txtDetailPicUrl" width="400px" height="300px" name="txtDetailPicUrl"  />
+                </tr>
+                <tr>
+                    <td colspan="4" align="center">
+                        <a href="javascript:void(0)" class="easyui-linkbutton" iconcls="icon-cancel" onclick="javascript:$('#DetailNewsDialog').dialog('close')">关闭</a>
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </div>
+</body>
+</html>

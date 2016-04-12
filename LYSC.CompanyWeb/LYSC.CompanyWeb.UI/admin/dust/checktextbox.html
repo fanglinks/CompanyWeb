@@ -1,0 +1,31 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title></title>
+    <script type="text/javascript" src="../easyUI/jquery-1.8.0.min.js"></script>
+    <script type="text/javascript">
+        $(function () {
+            $("#txtName").blur(function () {
+                alert(343);
+                return;
+            });
+            $("#txtLoginName").blur(function () {
+                //得到输入控件的值
+                var LoginName = $("#txtLoginName").val();
+                //使用异步进行查询
+                $.get("CheckTxtLoginName.ashx", { LoginName: LoginName }, function (date) {
+                    if (date == "OK") {
+                        alert("用户名已存在，请您检查");
+                    }
+                });
+            });
+        });
+    </script>
+</head>
+<body>
+    <!--<input type="text" name="txtName"  id="txtName" />-->
+    <input class="easyui-validatebox" type="text" id="txtLoginName" name="txtLoginName"  data-options="required:true,validType:'length[1,10]'" />
+    <input type="button" name="Login" value="登录" />
+</body>
+</html>

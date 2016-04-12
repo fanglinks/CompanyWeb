@@ -1,0 +1,40 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title></title>
+    <script type="text/javascript" src="../../Scripts/jquery-1.7.1.js"></script>
+   <!-- 异步上传图片-->
+    <script type="text/javascript" src="../../Scripts/MyAjaxForm.js"></script>
+    <script type="text/javascript">
+        $(function () {
+            //异步上传图片
+            $("#btnUploadImage").click(function () {
+                //返回图片地址
+                $("#frmUploadImg").ajaxSubmit({
+                    url: "ProcessImgUpload.ashx",
+                    type:"post",
+                    success: function (date) {
+                        $("#result").append("<img src='" + date + "'>");
+                    }
+                });
+            });
+
+            $("#btn").click(function () {
+                var str = $("#txt").val();
+                alert(str);
+            });
+        });
+    </script>
+</head>
+<body>
+    <!--异步上传图片-->
+    <input type="button" id="btnUploadImage" value="上传图片" />
+    <input type="button" name="txtName" value="btn " id="btn" />
+    <form id="frmUploadImg" enctype="multipart/form-data">
+        <input type="file" name="img" id="txt" />
+    </form>
+    <div id="result"></div>
+    
+</body>
+</html>

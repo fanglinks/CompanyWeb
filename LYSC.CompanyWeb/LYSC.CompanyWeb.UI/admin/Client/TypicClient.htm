@@ -1,0 +1,645 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>管理员后台页面</title>
+    <!--引入CSS加Jquery文件-->
+    <link href="../easyUI/themes/default/easyui.css" rel="stylesheet" />
+    <link href="../easyUI/themes/icon.css" rel="stylesheet" />
+    <!--要添加次样式，必须重新配置Table控件的内容-->
+    <!--<link href="../css/tableStyle.css" rel="stylesheet" />-->
+    <!--easyUI-->
+    <script type="text/javascript" src="../easyUI/jquery-1.8.0.min.js"></script>
+    <script type="text/javascript" src="../easyUI/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="../easyUI/locale/easyui-lang-zh_CN.js"></script>
+    <!--日期-->
+    <script src="../easyUI/datapattern2.js" type="text/javascript"></script>
+    <!--富文本-->
+    <script type="text/javascript" src="../kindeditor-4.1.3/kindeditor.js"></script>
+    <script type="text/javascript" src="../kindeditor-4.1.3/lang/zh_CN.js"></script>
+    <script type="text/javascript" src="../kindeditor-4.1.3/plugins/code/prettify.js"></script>
+    <link type="text/javascript" href="../kindeditor-4.1.3/themes/default/default.css" rel="stylesheet" />
+    <link type="text/javascript" href="../kindeditor-4.1.3/plugins/code/prettify.css" rel="stylesheet" />
+ 
+    <style type="text/css">
+        #tblAdd
+        {
+            width: 300px;
+        }
+        
+        #tblUpdate
+        {
+            width: 300px;
+        }
+    </style>
+    <script type="text/javascript">
+        $(function () {
+            //异步加载显示典型客户信息
+            initTypicalUserList();
+
+            //添加信息
+            AddClient();
+
+            //修改信息
+            UpdateClientList();
+
+        });
+
+        //富文本编辑器
+        KindEditor.ready(function (K) {
+            //修改的富文本
+            window.editorModify = K.create('#txtareaModify', {
+                cssPath: '../kindeditor-4.1.3/plugins/code/prettify.css',
+                uploadJson: '../kindeditor-4.1.3/asp.net/upload_json.ashx',
+                fileManagerJson: '../kindeditor-4.1.3/asp.net/file_manager_json.ashx',
+                allowFileManager: true,
+                afterCreate: function () {
+                    var self = this;                   
+                    K.ctrl(document, 13, function () {
+                        self.sync();
+                        K('form[name="txtareaModify"]')[0].submit();
+                    });
+                    K.ctrl(self.edit.doc, 13, function () {
+                        self.sync();
+                        K('form[name="txtareaModify"]')[0].submit();
+                    });
+                }
+            });
+
+            //增加的富文本 
+            window.editorADD = K.create('#txtareaAdd', {
+                cssPath: '../kindeditor-4.1.3/plugins/code/prettify.css',
+                uploadJson: '../kindeditor-4.1.3/asp.net/upload_json.ashx',
+                fileManagerJson: '../kindeditor-4.1.3/asp.net/file_manager_json.ashx',
+                allowFileManager: true,
+                afterCreate: function () {
+                    var self = this;
+                    K.ctrl(document, 13, function () {
+                        self.sync();
+                        K('form[name="txtareaAdd"]')[0].submit();
+                    });
+                    K.ctrl(self.edit.doc, 13, function () {
+                        self.sync();
+                        K('form[name="txtareaAdd"]')[0].submit();
+                    });
+                }
+            });
+
+            prettyPrint();
+        });
+
+        //异步加载显示典型客户信息
+        function initTypicalUserList() {
+            $('#test').datagrid({
+                url: 'TypicalUserListShowJson.ashx',
+                iconCls: 'icon-save',
+                width: 980,
+                fit: true,
+                height: 420,
+                nowrap: true,
+                autoRowHeight: false,
+                striped: true,
+                collapsible: true,
+                sortName: 'id',
+                sortOrder: 'asc',
+                remoteSort: false,
+                idField: 'id',
+                pagination: true,
+                rownumbers: true,
+                onLoadError:function () {
+                    window.location.href = '../../Error.html';
+                },
+                columns: [[
+                    { field: 'ck', checkbox: true, width: 50, align: 'left', rowspan: 2 },
+                    { field: 'id', title: '编号', width: 50, sortable: true },
+                    { field: 'title', title: '客户名称', width: 100 },
+                    { field: 'softName', title: '业务类型', width: 100 },
+                    { field: 'liaisonPhone', title: '联系电话', width: 130 },
+                    { field: 'liaisonPeple', title: '联系人', width: 130 },
+                    { field: 'date', title: '下单时间', width: 150, align: 'right',
+                        formatter: function (value, row, index) {
+                            return (eval(value.replace(/\/Date\((\d+)\)\//gi, "new Date($1)"))).pattern("yyyy-M-d h:m:s.S");
+                        }
+                    },
+                ]],
+                toolbar: [{
+                    id: 'btnadd',
+                    text: '添加',
+                    iconCls: 'icon-add',
+                    handler: function () {
+                        $('#AddClientDialog').dialog('open').dialog('setTitle', '添加客户信息');
+
+                        Clear();
+                    }
+                },'-',{
+                    id: 'btncut',
+                    text: '修改',
+                    iconCls: 'icon-cut',
+                    handler: function () {
+                        var RowUpdateUserID = $('#test').datagrid('getSelections');
+
+                        if (RowUpdateUserID.length == 1) {
+                            //实现绑定数据显示
+                            BindClientList();
+
+                            $("#UpdateClientDialog").dialog('open').dialog('setTitle', '修改用户信息');
+                        }
+                        else {
+                            $.messager.alert("友情提示", "每次只能修改一条，你已经选择了<font color='red'  size='6'>" + RowUpdateUserID.length + "</font>条");
+                        }
+                    }
+                }, '-', {
+                    id: 'btnsave',
+                    text: '删除',
+                    iconCls: 'icon-no',
+                    handler: function () {
+                        var RowDeleteClientID = $('#test').datagrid("getSelections");
+                        if (RowDeleteClientID.length == 1) {
+                            $.messager.confirm("删除信息", "您确认删除该条信息吗？", function (deleteClient) {
+                                if (deleteClient) {
+                                    $.post("DeleteClientJson.ashx", { clientID: RowDeleteClientID[0].id }, function (data) {
+                                        if (data == "OK") {
+                                            alert("删除成功");
+                                            //这里要将上次删除的Id清空，否则下次再删除的时候会报错
+                                            RowDeleteClientID.length = "";
+                                            $("#test").datagrid('reload') //重新刷新整个页面
+                                        }
+                                        else {
+                                            alert("删除失败");
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                        else {
+                            $.messager.alert("友情提示", "每次只能删除一行，你已经选择了<font color='red' size='6'>" + RowDeleteClientID.length + "</font>行");
+                        }
+                    }
+                }, '-', {
+                    id: 'btndetails',
+                    text: '详情',
+                    iconCls: 'icon-help',
+                    handler: function () {
+                        var RowUpdateUserID = $('#test').datagrid('getSelections');
+
+                        if (RowUpdateUserID.length == 1) {
+                            //实现绑定数据显示
+                            BindUserList();
+
+                            $("#details").dialog('open').dialog('setTitle', '客户详细信息');
+
+                        }
+                        else {
+                            $.messager.alert("友情提示", "每次只能修改一条，你已经选择了<font color='red'  size='6'>" + RowUpdateUserID.length + "</font>条");
+                        }
+                    }
+                }]
+            });
+        }
+
+        //异步实现添加用户信息
+        function AddClient() {
+            $("#addClient").click(function () {
+
+                //在前台对用户输入的信息做判断，不符合要求时“添加用户”就不能提交给后台
+                var valid = $("#ff").form('validate');
+                if (valid == false) {
+                    return false;
+                }
+
+                var title = $("#txttitle").val();
+                var softName = $("#txtsoftName").val();
+                var liaisonPhone = $("#txtliaisonPhone").val();
+                var liaisonPeple = $("#txtliaisonPeple").val();
+
+                //对时间的处理
+                //var date = $("#txtdate").val();
+                var date = $("#txtdate").datebox('getValue');
+                var peple = $("#txtpeple").val();
+                var content = editorADD.html();
+
+                //异步实现构造添加参数,给后台能传过去值
+                var AddClientListParam = "title=" + title + "&softName=" + softName + "&liaisonPhone=" +
+                    liaisonPhone + "&liaisonPeple=" + liaisonPeple + "&date=" + date + "&peple=" + peple +
+                    "&content=" + content;
+
+                //Ajax异步实现加载
+                $.ajax({
+                    url: "AddClient.ashx",
+                    data: AddClientListParam,
+                    type: "post",
+                    success: function (data) {
+                        if (data == "OK") {
+                            alert("添加成功");
+                            $('#AddClientDialog').dialog('close');
+                            $("#test").datagrid("reload");
+                        }
+                        else if (data == "LackOfRequeryItem") {
+                            alert("有必须处理项目没有处理!不能添加");
+                        }
+                        else {
+                            alert("添加失败");
+                        }
+                    }
+                })
+            });
+        };
+
+        //绑定修改Div中的用户信息控件
+        function BindClientList() {
+            var RowDetailClientId = $("#test").datagrid('getSelections')[0];
+            var param = "id=" + RowDetailClientId.id;
+            $.getJSON("GetModelInfo.ashx", param, function (data) {
+                $("#txttitleModify").val(data.title);
+                $("#txtsoftNameModify").val(data.softName);
+                $("#txtliaisonPhoneModify").val(data.liaisonPhone);
+                $("#txtliaisonPepleMofify").val(data.liaisonPeple);
+
+                //绑定显示时间
+                $("#txtdateModify").datebox('setValue', (eval(data.date.replace(/\/Date\((\d+)\)\//gi, "new Date($1)")).pattern("yyyy-M-d h:m:s")))
+
+                //$("#txtdateModify").val(eval(data.date.replace(/\/Date\((\d+)\)\//gi, "new Date($1)")).pattern("yyyy-M-d h:m:s.S"));
+                $("#txtpepleModify").val(data.peple);
+                editorModify.html(data.content);
+            })
+        }
+
+        //异步实现修改用户信息,btnUpdate
+        function UpdateClientList() {
+            var RowUpdateClientID = $('#test').datagrid('getSelections');
+            //首先执行加载绑定数据显示在页面上面
+            $("#btnUpdate").click(function () {
+                //构造要传递的参数
+                var postClientUpdate = {
+                    id: RowUpdateClientID[0].id,
+                    title: $("#txttitleModify").val(),
+                    softName: $("#txtsoftNameModify").val(),
+                    liaisonPhone: $("#txtliaisonPhoneModify").val(),
+                    liaisonPeple: $("#txtliaisonPepleMofify").val(),
+
+                    //绑定时间显示
+                    date:$('#txtdateModify').datebox('getValue'),
+                    //date: $("#txtdateModify").val(),
+                    peple: $("#txtpepleModify").val(),
+                    content: editorModify.html()
+                };
+
+                //在前台验证用户提交的用户信息是否符合要求，若不合要求不提交
+                var valid = $("#formModify").form('validate');
+                if (valid == false) {
+                    return false;
+                }
+
+                //实现异步修改数据
+                $.post("UpdateClientList.ashx", postClientUpdate, function (date) {
+                    if (date == "OK") {
+                        alert("修改成功");
+                        $("#UpdateClientDialog").dialog('close');
+                        $("#test").datagrid("reload");
+                    }
+                    else if (data == "LackOfRequeryItem") {
+                        alert("有必须处理项目没有处理!不能修改");
+                    }                 
+                    else {
+                        alert("修改失败，请您检查");
+                    }
+                });
+            });
+        };
+
+        //异步绑定详情的的时候显示数据
+        function BindUserList() {
+            //把用户选中的ID发送到后台，后台根据接收的ID查询出用户的详细信息
+            var RowDetailClientId = $("#test").datagrid('getSelections')[0];
+            var param = "id=" + RowDetailClientId.id;
+            $.getJSON("GetModelInfo.ashx", param, function (data) {
+                $("#txtidDetail").val(data.id);
+                $("#txttitleDetail").val(data.title);
+                $("#txtsoftNameDetail").val(data.softName);
+                $("#txtliaisonPhoneDetail").val(data.liaisonPhone);
+                $("#txtliaisonPepleDetail").val(data.liaisonPeple);
+                $("#txtdateDetail").val(eval(data.date.replace(/\/Date\((\d+)\)\//gi, "new Date($1)")).pattern("yyyy-M-d h:m:s.S"));
+                $("#txtpepleDetail").val(data.peple);
+                $("#txtDetail").html(data.content);
+            })
+        }
+
+        function Clear() {
+            $("#txttitle").val("");
+            $("#txtsoftName").val("");
+            $("#txtliaisonPhone").val("");
+            $("#txtliaisonPeple").val("");
+            $("#txtdate").val("");
+            $("#txtpeple").val("");
+            editorADD.html("");
+        };
+    </script>
+</head>
+<body class="easyui-layout">
+    	<div data-options="region:'north',split:true" title="管理员登录" align="center" style="height:100px; padding:10px;">
+		<h1>黑马训练营第三期第九组[王卯东,唐兰文,郭张浩,李宏利，韩迎龙,肖攀]开发，欢迎您的光临</h1>
+	</div>
+    <!--左边栏的导航-->
+    <div data-options="region:'west',split:true" title="左导航" style="width: 180px; padding: 1px;
+        overflow: hidden;">
+        <div class="easyui-accordion" data-options="fit:true,border:false">
+          
+            <!-- 第一个显示区域-->
+            <div title="相识黑马" data-options="selected:true" style="padding:10px;overflow:auto;">
+                <p><a href="../users/adminUser.html">用户管理</a></p>	
+				<p><a href="../Relationship/RelationShipShowJson.html">客服管理</a></p>
+				<p><a href="../Client/TypicClient.htm">典型客户</a></p>
+                <p><a href="../CompanyCulture/CorporateCulture.html">企业文化</a></p>
+                <p><a href="../News/newsList.html">新闻管理</a></p>
+                <p><a href="../Employees/EmployeesList.html">人才管理</a></p>
+			</div>
+
+            <!-- 第二个显示区域-->
+			<div title="网站介绍" style="padding:10px;">
+                <p><a href="../../Index.html" target="_blank">公司首页</a></p>
+                <p><a href="../../Company/Company.aspx" target="_blank">相识黑马</a></p>
+                <p><a href="../../Product/Product.aspx" target="_blank">软件产品</a></p>
+                <p><a href="../../News/News.aspx" target="_blank">新闻中心</a></p>
+                <p><a href="../../Service/Service.aspx" target="_blank">客服服务</a></p>
+                <p><a href="../../Employment/Employment.aspx" target="_blank">人才招聘</a></p>
+                <p><a href="../../Client/Client.aspx" target="_blank">典型客户</a></p>
+                <p><a href="../../Contact/Contact.aspx" target="_blank">联系我们</a></p>
+			</div>
+
+            <!-- 第三个个显示区域-->
+			<div title="小组风采" style="padding:10px">
+                <!--,唐兰文,郭张浩,李宏利，韩迎龙,肖攀-->
+                 <p><a href="javascript:void(0)">组长王卯东</a></p> 
+                 <p><a href="javascript:void(0)">组员唐兰文</a></p>
+                 <p><a href="javascript:void(0)">组员郭张浩</a></p>
+                 <p><a href="javascript:void(0)">组员李宏利</a></p>
+                 <p><a href="javascript:void(0)">组员韩迎龙</a></p>
+                 <p><a href="javascript:void(0)">组员肖攀</a></p>
+                 <p><a href="javascript:void(0)">黑马知己</a></p>
+			</div>
+
+        </div>
+    </div>
+    <!--存放内容的主区域-->
+    <div data-options="region:'center'" title="典型客户管理" style="overflow: hidden;">
+        <table id="test">
+        </table>
+    </div>
+    <!--底部版权信息的导航-->
+    <div data-options="region:'south',split:true" style="height: 40px; padding: 10px;
+        background: #efefef;" align="center">
+         版权信息  &copy 黑马三期第九组  && WMD，TLW，GZH，LHL，HYL，XP
+    </div>
+    <!--设置添加客户的弹出层-->
+    <div id="AddClientDialog" class="easyui-dialog" style="width: 600px; height: 500px;
+        padding: 10px 20px" closed="true" buttons="#dlg-buttons" align="center">
+        <form id="ff" method="post" novalidate="novalidate">
+        <table id="tblAdd">
+            <tr>
+                <th colspan="4">
+                    添加客户信息
+                </th>
+            </tr>
+            <tr>
+                <td>
+                    <label for="txttitle"> 客户名称：</label>
+                </td>
+                <td>
+                    <input class="easyui-validatebox" type="text" id="txttitle" name="txttitle" data-options="required:true,validType:'length[1,50]'" />
+                </td>
+                <td>
+                    <label for="txtsoftName">
+                        业务类型：</label>
+                </td>
+                <td>
+                    <input class="easyui-validatebox" type="text" id="txtsoftName" name="txtsoftName"
+                        data-options="required:true,validType:'length[1,150]'" />
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="txtliaisonPhone">
+                        联系电话：</label>
+                </td>
+                <td>
+                    <input class="easyui-numberbox" type="text" id="txtliaisonPhone" name="txtliaisonPhone"
+                        data-options="validType:'length[1,30]'" />
+                </td>
+                <td>
+                    <label for="txtliaisonPeple">
+                        联系人：</label>
+                </td>
+                <td>
+                    <input class="easyui-validatebox" type="text" id="txtliaisonPeple" name="txtliaisonPeple"
+                       data-options="validType:'length[1,30]'" />
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="txtdate">
+                        下单日期：</label>
+                </td>
+                <td>
+                     <!--<input class="easyui-validatebox" type="text" id="txtdate" name="txtdate"  />-->
+                   <input class="easyui-datebox" type="text" id="txtdate" name="txtdate" data-options="required:true" />
+                </td>
+                <td>
+                    <label for="txtpeple">
+                        销售员</label>
+                </td>
+                <td>
+                    <input class="easyui-validatebox" type="text" id="txtpeple" name="txtpeple" data-options="required:true,validType:'length[1,30]'" />
+                </td>
+                <td>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="4">
+                    <textarea id="txtareaAdd" cols="100" rows="8" style="width: 500px; height: 150px;
+                        visibility: hidden;">
+                            
+                        </textarea>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="4" style="text-align: center">
+                     <a href="javascript:void(0)" class="easyui-linkbutton" id="addClient" iconcls="icon-ok" >确定</a>
+                     <a href="javascript:void(0)" class="easyui-linkbutton" iconcls="icon-cancel" onclick="javascript:$('#AddClientDialog').dialog('close')">关闭</a>
+                </td>
+            </tr>
+        </table>
+        </form>
+    </div>
+    <!--设置修改的弹出层-->
+    <div id="UpdateClientDialog" class="easyui-dialog" style="width: 600px; height: 500px;
+        padding: 10px 20px" closed="true" buttons="#dlg-buttons" align="center">
+        <form id="formModify" method="post" novalidate="novalidate">
+        <table id="tblUpdate">
+            <tr>
+                <th colspan="4">
+                    修改客户信息
+                </th>
+            </tr>
+            <tr>
+                <td>
+                    <label for="txttitleModify">
+                        客户名称：</label>
+                </td>
+                <td>
+                    <input class="easyui-validatebox" type="text" id="txttitleModify" name="txttitleModify"
+                        data-options="required:true,validType:'length[1,50]'" />
+                </td>
+                <td>
+                    <label for="txtsoftNameModify">
+                        业务类型：</label>
+                </td>
+                <td>
+                    <input class="easyui-validatebox" type="text" id="txtsoftNameModify" name="txtsoftNameModify"
+                        data-options="required:true,validType:'length[1,150]'" />
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="txtliaisonPhoneModify">
+                        联系电话：</label>
+                </td>
+                <td>
+                    <input class="easyui-validatebox" type="text" id="txtliaisonPhoneModify" name="txtliaisonPhoneModify"
+                        data-options="validType:'length[1,30]'" />
+                </td>
+                <td>
+                    <label for="txtliaisonPepleMofify">
+                        联系人：</label>
+                </td>
+                <td>
+                    <input class="easyui-validatebox" type="text" id="txtliaisonPepleMofify" name="txtliaisonPepleMofify"
+                        data-options="validType:'length[1,30]'" />
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="txtdateModify">
+                        下单日期：</label>
+                </td>
+                <td>
+                    <input class="easyui-datebox" type="text" id="txtdateModify" name="txtdateModify" data-options="required:true" />
+                </td>
+                <td>
+                    <label for="txtpepleModify">
+                        销售员</label>
+                </td>
+                <td>
+                    <input class="easyui-validatebox" type="text" id="txtpepleModify" name="txtpepleModify"
+                        data-options="required:true,validType:'length[1,30]'" />
+                </td>
+                <td>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="4">
+                    <textarea id="txtareaModify" name="txtareaModify" cols="70" rows="8" style="width: 500px;
+                        height: 150px; visibility: hidden;">
+                            
+                        </textarea>
+                </td>
+            </tr>
+            <tr>
+            <tr>
+                <td colspan="4" style="text-align: center">
+                     <a href="javascript:void(0)" class="easyui-linkbutton" id="btnUpdate" iconcls="icon-ok" >确定</a>
+                     <a href="javascript:void(0)" class="easyui-linkbutton" iconcls="icon-cancel" onclick="javascript:$('#UpdateClientDialog').dialog('close')">关闭</a>
+                </td>
+            </tr>
+        </table>
+        </form>
+    </div>
+    <!--设置详细信息的弹出层-->
+    <div id="details" class="easyui-dialog" style="width: 570px; height: 440px; padding: 10px 20px"
+        closed="true" buttons="#dlg-buttons" align="center">
+        <form id="detailform" method="post" novalidate="novalidate">
+        <table id="detialtable">
+            <tr>
+                <th colspan="4">
+                    客户详细信息
+                </th>
+            </tr>
+            <tr>
+                <td colspan="4">
+                    &nbsp
+                </td>
+            </tr>
+            <tr>
+                <td colspan="4" style="text-align: center">
+                    <label for="txtidDetail">
+                        客户编号：</label>
+                    <input type="text" name="txtidDetail" id="txtidDetail"  readonly="true" />
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="txttitleDetail">
+                        客户名称：</label>
+                </td>
+                <td>
+                    <input type="text" name="txttitleDetail" id="txttitleDetail"  readonly="true" />
+                </td>
+                <td>
+                    <label for="txtsoftNameDetail">
+                        业务类型：</label>
+                </td>
+                <td>
+                    <input type="text" name="txtsoftNameDetail" id="txtsoftNameDetail"  readonly="true" />
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="txtliaisonPhoneDetail">
+                        联系电话：</label>
+                </td>
+                <td>
+                    <input type="text" name="txtliaisonPhoneDetail" id="txtliaisonPhoneDetail"  readonly="true" />
+                </td>
+                <td>
+                    <label for="txtliaisonPepleDetail">
+                        联系人：</label>
+                </td>
+                <td>
+                     <input type="text" name="txtliaisonPepleDetail" id="txtliaisonPepleDetail"  readonly="true" />
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="txtdateDetail">
+                        下单日期：</label>
+                </td>
+                <td>
+                    <input class="easyui-validatebox" type="text" id="txtdateDetail" name="txtdateDetail" readonly="true" />
+                </td>
+                <td>
+                    <label for="txtpepleDetail">
+                        销售员</label>
+                </td>
+                <td>
+                    <input type="text" name="txtpepleDetail" id="txtpepleDetail"  readonly="true" />
+                </td>
+                <td>
+                </td>
+            </tr>
+            <tr><td colspan="4">&nbsp<br /></td></tr>
+            <tr><td colspan="4"><font style="font-size:medium;font-style:oblique;">订单内容：</font></td></tr>
+            <tr>
+                <td colspan="4">
+                    <div id="txtDetail" cols="90" rows="8" style="width: 500px; height: 150px; border:1px solid red; overflow:scroll"></div>
+                </td>
+            </tr>
+            <tr>
+            <tr>
+                <td colspan="4" style="text-align: center">
+                     <a href="javascript:void(0)" class="easyui-linkbutton" iconcls="icon-cancel" onclick="javascript:$('#details').dialog('close')">关闭</a>
+                </td>
+            </tr>
+        </table>
+        </form>
+    </div>
+</body>
+</html>

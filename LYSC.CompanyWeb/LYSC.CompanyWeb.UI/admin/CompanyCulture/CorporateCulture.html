@@ -1,0 +1,239 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>管理员后台页面</title>
+    <script src="../../Scripts/jquery-1.7.1.js"></script>
+    <link href="../kindeditor-4.1.3/plugins/code/prettify.css" rel="stylesheet" />
+    <link href="../kindeditor-4.1.3/themes/default/default.css" rel="stylesheet" />
+    <script src="../kindeditor-4.1.3/kindeditor.js"></script>
+    <script charset="utf-8" src="../kindeditor-4.1.3/lang/zh_CN.js"></script>
+    <script src="../kindeditor-4.1.3/plugins/code/prettify.js"></script>
+
+    <!--引入CSS加Jquery文件-->
+    <link href="../easyUI/themes/default/easyui.css" rel="stylesheet" />
+    <link href="../easyUI/themes/icon.css" rel="stylesheet" />
+    
+    <!--要添加次样式，必须重新配置Table控件的内容-->
+    <!--<link href="../css/tableStyle.css" rel="stylesheet" />-->
+
+    <script type="text/javascript" src="../easyUI/jquery-1.8.0.min.js"></script>
+    <script type="text/javascript" src="../easyUI/jquery.easyui.min.js"></script>
+    <script type[="text/javascript" src="../easyUI/locale/easyui-lang-zh_CN.js"></script>
+
+    <style type="text/css">
+        #txtName {
+            width: 297px;
+        }
+    </style>
+    <script type="text/javascript">
+
+        $(function () {
+            //初始化页面表格的数据
+            initUserList();
+            //初始值富文本编辑器
+            //KindEditorFun();
+        });
+
+        //---------------初始化页面表格的数据
+        function initUserList() {
+            $('#initContext').datagrid({
+                url: 'DownLoadContext.ashx',
+                width: 1050,
+                height: 400,
+                fitColumns: true,
+                idField: 'ID',
+                nowrap: false,   //允许换行显示信息，是否在一行上面显示数据
+                rownumbers: true,  //显示行号
+                collapsible: true,
+                pagination: false,
+                singleSelect: false, //单行选择
+                onLoadError: function () {  //当页面错误的时候跳转页面
+                    window.location.href = '../../Error.html';
+                },
+                columns: [[//列的定义
+                        { field: 'ck', checkbox: 'true' },
+                        { field: 'ID', title: 'ID' },
+                        { field: 'Name', title: '名称', width: 30 },
+						{ field: 'Context', title: '公司文化', width: 400,id:"www" }
+                ]],
+                toolbar: [{
+                    id: 'btnedit',
+                    text: '编辑',
+                    iconCls: 'icon-edit',
+                    handler: function () {
+                    }
+                }]
+            });
+            KindEditorFun();
+        }
+
+        //--------------富文本编辑框
+        function KindEditorFun() {
+            KindEditor.ready(function (K) {
+                var editor = K.create('#contentCulture', {
+                    cssPath: '../kindeditor-4.1.3/plugins/code/prettify.css',
+                    uploadJson: '../kindeditor-4.1.3/asp.net/upload_json.ashx',//*****
+                    fileManagerJson: '../kindeditor-4.1.3/asp.net/file_manager_json.ashx',//*****
+                    allowFileManager: true,
+                    afterCreate: function () {
+                        var self = this;
+                        K.ctrl(document, 13, function () {
+                            self.sync();
+                            K('form[name=example]')[0].submit();
+                        });
+                        K.ctrl(self.edit.doc, 13, function () {
+                            self.sync();
+                            K('form[name=example]')[0].submit();
+                        });
+                        //---------给富文本框赋值--------------------
+                        //在给富文本框赋值时，用editor.html()和editor.insertHtml()有区别
+                        K("#btnedit").click(function (e) {
+                            //调用给富文本框赋值的方法
+                            loadData();
+                        });
+                        //----------------清除富文本框的内容
+                        K("#btnClear").click(function (e) {
+                            editor.html("");
+                        });
+                        //---------------把内容重新加载到富文本框
+                        K("#btnReAdd").click(function (e) {
+                            loadData();
+                        });
+                        //-------------把富文本框中的内容添加到数据库
+                        K('#btnSave').click(function (e) {
+                            if ($("#txtName").val().length > 30) {
+                                $.messager.alert('温馨提示', '公司名字不能超过30个字!', 'warning');
+                            }
+                            else {
+                                $.messager.confirm('温馨提示', '你确定保存吗?', function (r) {
+                                    if (r) {
+                                        var dataPost = {
+                                            id: $("#labId").text(),
+                                            contentCulture: editor.html(),
+                                            name: $("#txtName").val()
+                                        };
+                                        $.post("UpdateContext.ashx", dataPost, function (data) {
+                                            if (data == "OK") {
+                                                $.messager.alert('温馨提示', '保存成功!');
+                                                //关闭对话框
+                                                $('#editContent').dialog('close');
+                                                //--------------刷新页面--------------有问题！！！
+                                                $("#initContext").datagrid('reload');
+                                            }
+                                            else {
+                                                $.messager.alert('温馨提示', '保存失败!', 'warning');
+                                            }
+                                        });
+                                    }
+                                });
+                            }
+                        });
+                        //--------把数据读入文本框的方法
+                        function loadData() {
+                            rows = $('#initContext').datagrid('getSelections');
+                            if (rows.length == 1) {
+                                //获得选择行的Id
+                                var selectedRowID = $('#initContext').datagrid('getSelected').ID;
+                                $.getJSON("DownLoadContext.ashx", {}, function (data) {
+                                    editor.html('');
+                                    $("#labId").text(selectedRowID);
+                                    $("#txtName").val(data.rows[selectedRowID - 1].Name);
+                                    editor.html(data.rows[selectedRowID - 1].Context);
+                                });
+                                //弹出文本框
+                                $('#editContent').dialog({
+                                    title: '修改公司文化',
+                                    collapsible: true,
+                                    minimizable: true,
+                                    maximizable: true,
+                                    resizable: true,
+                                }).dialog('open');
+                            }
+                            else {
+                                $.messager.alert("友情提示", "每次只能编辑一条，你已经选择了<font color='red'  size='6'>" + rows.length + "</font>条");
+                            }
+                        }
+                    }
+                });
+                prettyPrint();
+            });
+        }
+    </script>    
+</head>
+<body class="easyui-layout">
+	<div data-options="region:'north',split:true" title="管理员登录" align="center" style="height:100px;padding:10px;">
+		<h1>黑马训练营第三期第九组[王卯东,唐兰文,郭张浩,李宏利，韩迎龙,肖攀]开发，欢迎您的光临</h1>
+	</div>
+    <!--左边栏的导航-->
+	<div data-options="region:'west',split:true" title="左导航" style="width:180px;padding:1px;overflow:hidden;">
+		<div class="easyui-accordion" data-options="fit:true,border:false">
+
+            <!-- 第一个显示区域-->
+            <div title="相识黑马" data-options="selected:true" style="padding:10px;overflow:auto;">
+                <p><a href="../users/adminUser.html">用户管理</a></p>	
+				<p><a href="../Relationship/RelationShipShowJson.html">客服管理</a></p>
+				<p><a href="../Client/TypicClient.htm">典型客户</a></p>
+                <p><a href="CorporateCulture.html">企业文化</a></p>
+                <p><a href="../News/newsList.html">新闻管理</a></p>
+                <p><a href="../Employees/EmployeesList.html">人才管理</a></p>
+			</div>
+
+            <!-- 第二个显示区域-->
+			<div title="网站介绍" style="padding:10px;">
+                <p><a href="../../Index.html" target="_blank">公司首页</a></p>
+                <p><a href="../../Company/Company.aspx" target="_blank">相识黑马</a></p>
+                <p><a href="../../Product/Product.aspx" target="_blank">软件产品</a></p>
+                <p><a href="../../News/News.aspx" target="_blank">新闻中心</a></p>
+                <p><a href="../../Service/Service.aspx" target="_blank">客服服务</a></p>
+                <p><a href="../../Employment/Employment.aspx" target="_blank">人才招聘</a></p>
+                <p><a href="../../Client/Client.aspx" target="_blank">典型客户</a></p>
+                <p><a href="../../Contact/Contact.aspx" target="_blank">联系我们</a></p>
+			</div>
+
+            <!-- 第三个个显示区域-->
+			<div title="小组风采" style="padding:10px">
+                <!--,唐兰文,郭张浩,李宏利，韩迎龙,肖攀-->
+                 <p><a href="javascript:void(0)">组长王卯东</a></p> 
+                 <p><a href="javascript:void(0)">组员唐兰文</a></p>
+                 <p><a href="javascript:void(0)">组员郭张浩</a></p>
+                 <p><a href="javascript:void(0)">组员李宏利</a></p>
+                 <p><a href="javascript:void(0)">组员韩迎龙</a></p>
+                 <p><a href="javascript:void(0)">组员肖攀</a></p>
+                 <p><a href="javascript:void(0)">黑马知己</a></p>
+			</div>
+		</div>
+	</div>
+
+    <!--存放内容的主区域-->
+	<div data-options="region:'center'" title="公司文化" style="overflow:scroll;">  
+        <table id="initContext">
+            
+        </table>
+    </div>
+
+    <!--底部版权信息的导航-->
+    <div data-options="region:'south',split:true"
+        style="height:40px;padding:10px;background:#efefef;" align="center">
+        版权信息  &copy 黑马三期第九组  && WMD，TLW，GZH，LHL，HYL，XP
+	</div> 
+
+    <!--编辑弹出的文本框-->
+        <div id="editContent"  class="easyui-dialog"style="width:800px;height:500px;padding:10px 20px"
+        closed="true" buttons="#dlg-buttons" align="center" iconcls="icon-save" >
+        <form id="form1">
+            <div>ID：<label id="labId"></label></div>
+            <div>公司名称：<input type="text" name="txtName" value="" id="txtName"/></div>
+        <textarea id="contentCulture" cols="200" rows="10" style="width:600px; height:350px;" name="contentCulture">
+
+        </textarea>
+            <a href="javascript:void(0)" class="easyui-linkbutton" iconcls="icon-reload" id="btnReAdd">重新导入</a>
+            <a href="javascript:void(0)" class="easyui-linkbutton" iconcls="icon-remove" id="btnClear">清空</a>
+            <a href="javascript:void(0)" class="easyui-linkbutton" iconcls="icon-save" id="btnSave">保存</a>
+            <a href="javascript:void(0)" class="easyui-linkbutton" iconcls="icon-cancel" onclick="javascript:$('#editContent').dialog('close')">关闭</a>
+         </form>
+    </div>
+</body>
+</html>
+
+

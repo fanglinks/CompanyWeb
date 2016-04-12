@@ -1,0 +1,60 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title> 测试项目</title>
+
+    <link href="../easyUI/themes/default/easyui.css" rel="stylesheet" />
+    <link href="../easyUI/themes/icon.css" rel="stylesheet" />
+    <link href="../easyUI/themes/demo.css" rel="stylesheet" />
+
+    <script src="../easyUI/jquery-1.8.0.min.js"></script>
+    <script src="../easyUI/jquery.easyui.min.js"></script>
+	<script>
+	    $(function () {
+	        var lastIndex;
+	        $('#tt').datagrid({
+	            onBeforeLoad: function () {
+	                $(this).datagrid('rejectChanges');
+	            },
+	            onCancelEdit: function (rowIndex, rowData) {
+	                alert("推出了");
+	            },
+	            onClickRow: function (rowIndex) {
+	                if (lastIndex != rowIndex) {
+	                    $('#tt').datagrid('endEdit', lastIndex);
+	                    $('#tt').datagrid('beginEdit', rowIndex);
+	                }
+	                lastIndex = rowIndex;
+	            }
+	        });
+	        $("td").click(function () {
+	            alert(343);
+	        })
+	    });
+	</script>
+</head>
+<body>
+
+	<table id="tt" style="width:1150px;height:auto"
+			data-options="iconCls:'icon-edit',singleSelect:true,idField:'ID',url:'TestUserJson.ashx'"
+			title="测试项目">
+		<thead>
+			<tr>
+
+				<th data-options="field:'ID',width:80">编号</th>
+                <th data-options="field:'UserName',width:100,editor:'text'">用户名</th>
+                <th data-options="field:'LoginName',width:100, editor:'text'">姓名</th>
+                <th data-options="field:'PassWord',width:100, editor:'text'">密码</th>
+                <th data-options="field:'Plane',width:200, editor:'text'">座机</th>
+                <th data-options="field:'phone',width:200, editor:'text'">电话</th>
+                <th data-options="field:'Mail',width:150, editor:'text'">邮件</th>
+                <th data-options="field:'cardNo',width:100, editor:'text'">卡号</th>
+				
+				<th data-options="field:'status',width:60,align:'center',editor:{type:'checkbox',options:{on:'P',off:''}}">选择</th>
+			</tr>
+		</thead>
+	</table>
+	
+</body>
+</html>

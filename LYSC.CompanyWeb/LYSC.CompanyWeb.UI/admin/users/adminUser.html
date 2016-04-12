@@ -1,0 +1,418 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>管理员后台页面</title>
+    <!--引入CSS加Jquery文件-->
+    <link href="../easyUI/themes/default/easyui.css" rel="stylesheet" />
+    <link href="../easyUI/themes/icon.css" rel="stylesheet" />
+    
+    <!--要添加次样式，必须重新配置Table控件的内容-->
+    <!--<link href="../css/tableStyle.css" rel="stylesheet" />-->
+
+    <script type="text/javascript" src="../easyUI/jquery-1.8.0.min.js"></script>
+    <script type="text/javascript" src="../easyUI/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="../easyUI/locale/easyui-lang-zh_CN.js"></script>
+
+    <style type="text/css">
+        #tblAdd {
+            width: 300px;
+        }
+
+        #tblUpdate {
+            width: 300px;
+        }
+    </style>
+    
+
+    <script type="text/javascript">
+        $(function () {
+
+            //异步加载显示所有的用户信息
+            initUserList();
+
+            //实现对数据库的的添加验证功能，LoginName必须不能和数据库中的重复
+            $("#txtLoginName").blur(function () {
+                //得到输入控件的值
+                var LoginName = $("#txtLoginName").val();
+                //使用异步进行查询
+                $.get("CheckingLoginName.ashx", { LoginName: LoginName }, function (date) {
+                    if (date == "OK") {
+                        alert("用户名已存在，请您检查");
+                        $("#txtLoginName").val("");
+                        return;
+                    }
+                });
+            });
+
+            //实现添加的功能，必须将调用的方法放在这里，因为放在下面添加的时候将会重复的添加，实现添加用户信息
+            AddUserList();
+
+            //实现对用户数据的修改信息
+            UpdateUserList();
+        });
+
+        //异步加载显示所有的用户信息
+        function initUserList() {
+            $('#test').datagrid({
+                url: 'UserListShowJson.ashx',
+                iconCls: 'icon-save',
+                width: 980,
+                fit: true,
+                height: 420,
+                nowrap: true,
+                autoRowHeight: false,
+                striped: true,
+                collapsible: true,
+                sortName: 'ID',
+                sortOrder: 'asc',
+                remoteSort: false,
+                idField: 'ID',
+                pagination: true,
+                rownumbers: true,
+                onLoadError: function () {  //当页面错误的时候跳转页面
+                    window.location.href = '../../Error.html';
+                },
+                columns: [[
+                    { field: 'ck', checkbox: true, width: 50, align: 'left', rowspan: 2 },
+                    { field: 'ID', title: '编号', width: 50, sortable: true },
+                    { field: 'UserName', title: '姓名', width: 100 },
+                    { field: 'LoginName', title: '登录名', width: 100 },
+                    { field: 'PassWord', title: '密码', width: 130 },
+                    { field: 'Plane', title: '座机', width: 130 },
+                    { field: 'phone', title: '电话', width: 130 },
+                    { field: 'Mail', title: '邮件', width: 130 },
+                    { field: 'cardNo', title: '卡号', width: 130 }
+                ]],
+                toolbar: [{
+                    id: 'btnadd',
+                    text: '添加',
+                    iconCls: 'icon-add',
+                    handler: function () {
+                        $('#AddUserDialog').dialog('open').dialog('setTitle', '添加用户信息');
+                        //  王卯东 ，Bug提醒
+                        Clear();
+                    }
+                }, '-', {
+                    id: 'btncut',
+                    text: '修改',
+                    iconCls: 'icon-cut',
+                    handler: function () {
+                        var RowUpdateUserID = $('#test').datagrid('getSelections');
+
+                        if (RowUpdateUserID.length == 1) {
+                            //实现绑定数据显示
+                            BindUserList();
+
+                            $("#UpdateUserDialog").dialog('open').dialog('setTitle', '修改用户信息');
+                        }
+                        else {
+                            $.messager.alert("友情提示", "每次只能修改一条，你已经选择了<font color='red'  size='6'>" + RowUpdateUserID.length + "</font>条", "error");
+                        }
+                    }
+                }, '-', {
+                    id: 'btnsave',
+                    text: '删除',
+                    iconCls: 'icon-no',
+                    handler: function () {
+                        var RowDeleteUserID = $('#test').datagrid("getSelections");
+                        if (RowDeleteUserID.length == 1) {
+                            $.messager.confirm("删除信息", "您确认删除该条信息吗？", function (deleteuser) {
+                                if (deleteuser) {
+                                    $.post("DeleteUserJson.ashx", { userID: RowDeleteUserID[0].ID }, function (data) {
+                                        if (data == "OK") {
+                                            $("#test").datagrid('reload') //重新刷新整个页面
+                                            alert("删除成功");
+                                            //当删除完成的时候清除掉它的长度
+                                            RowDeleteUserID.length = "";
+                                        }
+                                        else {
+                                            alert("删除失败");
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                        else {
+                            $.messager.alert("友情提示", "每次只能删除一行，你已经选择了<font color='red' size='6'>" + RowDeleteUserID.length + "</font>行", "error");
+                        }
+                    }
+                }]
+            });
+        };
+
+        //异步实现添加用户信息
+        function AddUserList() {
+            //btnReg,txtUserName,txtLoginName,txtPassword,txtPlane,txtPhone,txtEmail,txtCardNo
+            $("#btnReg").click(function () {
+
+                //,remote['CheckingLoginName.ashx','ID']
+                //验证所有的文本框是否通过用户的验证
+                var valid = $('#ff').form('validate');
+                if (valid == false) {
+                    return false;
+                }
+
+                var UserName = $("#txtUserName").val();
+                var LoginName = $("#txtLoginName").val();
+                var Password = $("#txtPassword").val();
+                var Plane = $("#txtPlane").val();
+                var Phone = $("#txtPhone").val();
+                var Email = $("#txtEmail").val();
+                var CardNo = $("#txtCardNo").val();
+
+                //异步实现构造添加参数,给后台能传过去值
+                var AddUserListParam = "UserName=" + UserName + "&LoginName=" + LoginName + "&Password=" +
+                    Password + "&Plane=" + Plane + "&Phone=" + Phone + "&Email=" + Email + "&CardNo=" + CardNo;
+
+                $("#txtLoginName").blur(function () {
+                    alert(343);
+                });
+
+                $.ajax({
+                    url: "AddUserList.ashx",
+                    data: AddUserListParam,
+                    type: "post",
+                    success: function (data) {
+                        if (data == "OK") {
+                            alert("添加成功");
+                            $('#AddUserDialog').dialog('close');
+                            $("#test").datagrid("reload");
+                        }
+                        else {
+                            alert("添加失败");
+                        }
+                    }
+                });
+            });
+        };
+
+        //异步实现修改用户信息,btnUpdate
+        function UpdateUserList() {
+            var RowUpdateUserID = $('#test').datagrid('getSelections');
+            //首先执行加载绑定数据显示在页面上面
+            $("#btnUpdate").click(function () {
+
+                //验证所有的文本框是否通过用户的验证
+                var valid = $('#Form1').form('validate');
+                if (valid == false) {
+                    return false;
+                }
+
+                //构造要传递的参数
+                var postUserUpdate = {
+                    ID: RowUpdateUserID[0].ID,
+                    UserName: $("#txtUpdateUserName").val(),
+                    LoginName: $("#txtUpdateLoginName").val(),
+                    Password: $("#txtUpdatePassword").val(),
+                    Plane: $("#txtUpdatePlane").val(),
+                    Phone: $("#txtUpdatePhone").val(),
+                    Email: $("#txtUpdateEmail").val(),
+                    CardNo: $("#txtUpdateCardNo").val()
+                };
+
+                //实现异步修改数据
+                $.post("UpdataUserList.ashx", postUserUpdate, function (date) {
+                    if (date == "OK") {
+                        alert("修改成功");
+                        $("#UpdateUserDialog").dialog('close');
+                        $("#test").datagrid("reload");
+                    }
+                    else {
+                        alert("修改失败，请您检查");
+                    }
+                });
+            });
+        };
+
+        //异步帮顶修改的的时候显示数据
+        function BindUserList() {
+            var RowUpdateUserID = $('#test').datagrid('getSelections')[0];
+            //首先显示前台页面的加载信息
+            //$.post("GetUserListByID.ashx", { ID: RowUpdateUserID[0].ID }, function (userinfo) {
+            //    //btnUpdate,txtUserName,txtLoginName,txtPassword,txtPlane,txtPhone,txtEmail,txtCardNo
+            //    //获取信息显示在文本框里面
+            //    //{"ID":92,"UserName":"hyl","LoginName":"hyl","PassWord":"hyl","Plane":"433","phone":"4343","Mail":"111@qq.co","cardNo":"134343"}
+            //    $("#txtUpdateUserID").val(RowUpdateUserID[0].ID);
+            //    $("#txtUpdateUserName").val(userinfo.UserName);
+            //});
+            $("#txtUpdateUserID").val(RowUpdateUserID.ID);
+            $("#txtUpdateUserName").val(RowUpdateUserID.UserName);
+            $("#txtUpdateLoginName").val(RowUpdateUserID.LoginName);
+            $("#txtUpdatePassword").val(RowUpdateUserID.PassWord);
+            $("#txtUpdatePlane").val(RowUpdateUserID.Plane);
+            $("#txtUpdatePhone").val(RowUpdateUserID.phone);
+            $("#txtUpdateEmail").val(RowUpdateUserID.Mail);
+            $("#txtUpdateCardNo").val(RowUpdateUserID.cardNo);
+        }
+
+        //王卯东  当单击添加的时候清空文本框中的值
+        function Clear() {
+            $("#txtUserName").val("");
+            $("#txtLoginName").val("");
+            $("#txtPassword").val("");
+            $("#txtPlane").val("");
+            $("#txtPhone").val("");
+            $("#txtEmail").val("");
+            $("#txtCardNo").val("");
+        };
+
+
+    </script>
+
+</head>
+<body class="easyui-layout">
+	<div data-options="region:'north',split:true" title="管理员登录" align="center" style="height:100px; padding:10px;">
+		<h1>黑马训练营第三期第九组[王卯东,唐兰文,郭张浩,李宏利，韩迎龙,肖攀]开发，欢迎您的光临</h1>
+	</div>
+
+    <!--左边栏的导航-->
+	<div data-options="region:'west',split:true" title="左导航" style="width:180px;padding:1px;overflow:hidden;">
+		<div class="easyui-accordion" data-options="fit:true,border:false">
+			<!-- 第一个显示区域-->
+            <div title="相识黑马" data-options="selected:true" style="padding:10px;overflow:auto;">
+                <p><a href="adminUser.html">用户管理</a></p>	
+				<p><a href="../Relationship/RelationShipShowJson.html">客服管理</a></p>
+				<p><a href="../Client/TypicClient.htm">典型客户</a></p>
+                <p><a href="../CompanyCulture/CorporateCulture.html">企业文化</a></p>
+                <p><a href="../News/newsList.html">新闻管理</a></p>
+                <p><a href="../Employees/EmployeesList.html">人才管理</a></p>
+			</div>
+
+            <!-- 第二个显示区域-->
+			<div title="网站介绍" style="padding:10px;">
+                <p><a href="../../Index.html" target="_blank">公司首页</a></p>
+                <p><a href="../../Company/Company.aspx" target="_blank">相识黑马</a></p>
+                <p><a href="../../Product/Product.aspx" target="_blank">软件产品</a></p>
+                <p><a href="../../News/News.aspx" target="_blank">新闻中心</a></p>
+                <p><a href="../../Service/Service.aspx" target="_blank">客服服务</a></p>
+                <p><a href="../../Employment/Employment.aspx" target="_blank">人才招聘</a></p>
+                <p><a href="../../Client/Client.aspx" target="_blank">典型客户</a></p>
+                <p><a href="../../Contact/Contact.aspx" target="_blank">联系我们</a></p>
+			</div>
+
+            <!-- 第三个个显示区域-->
+			<div title="小组风采" style="padding:10px">
+                <!--,唐兰文,郭张浩,李宏利，韩迎龙,肖攀-->
+                 <p><a href="javascript:void(0)">组长王卯东</a></p> 
+                 <p><a href="javascript:void(0)">组员唐兰文</a></p>
+                 <p><a href="javascript:void(0)">组员郭张浩</a></p>
+                 <p><a href="javascript:void(0)">组员李宏利</a></p>
+                 <p><a href="javascript:void(0)">组员韩迎龙</a></p>
+                 <p><a href="javascript:void(0)">组员肖攀</a></p>
+                 <p><a href="javascript:void(0)">黑马知己</a></p>
+			</div>
+
+		</div>
+	</div>
+
+    <!--存放内容的主区域-->
+	<div data-options="region:'center'" title="用户管理操作区域" style="overflow:hidden;">
+        <table id="test"></table>
+    </div>
+
+    <!--底部版权信息的导航-->
+    <div data-options="region:'south',split:true"
+        style="height:40px;padding:10px;background:#efefef;" align="center">
+        版权信息  &copy 黑马三期第九组  && WMD，TLW，GZH，LHL，HYL，XP
+	</div> 
+
+    <!--设置添加的弹出层-->
+    <div id="AddUserDialog" class="easyui-dialog" style="width:400px;height:360px;padding:10px 20px"
+			closed="true" buttons="#dlg-buttons" align="center">
+        <form id="ff" method="post" novalidate="novalidate">
+        <table id="tblAdd">
+                <tr>
+                    <th colspan="2" >添加用户信息</th>
+                </tr>
+                <tr>
+                    <td><label for="txtUserName">姓名：</label></td>
+                    <td><input class="easyui-validatebox" type="text" id="txtUserName" name="txtUserName" data-options="required:true,validType:'length[1,20]'" /></td>
+                </tr>
+                <tr>
+                    <td><label for="txtLoginName">登录名：</label></td>
+                    <td><input class="easyui-validatebox" type="text" id="txtLoginName" name="txtLoginName"  data-options="required:true,validType:'length[1,20]'" /></td>
+                </tr>
+                 <tr>
+                    <td><label for="txtPassword">密码：</label></td>
+                    <td><input class="easyui-numberbox" type="text" id="txtPassword" name="txtPassword" data-options="required:true,validType:'length[1,30]'" /></td><td><span style="color:red">必须数字</span></td>
+                </tr>
+                 <tr>
+                    <td><label for="txtPlane">座机</label></td>
+                    <td><input class="easyui-numberbox" type="text" id="txtPlane" name="txtPlane" data-options="validType:'length[1,14]'" /></td><td><span style="color:red">必须数字</span></td>
+                </tr>
+                 <tr>
+                    <td><label for="txtPhone">手机</label></td>
+                    <td><input  class="easyui-numberbox" type="text" id="txtPhone" name="txtPhone" data-options="validType:'length[1,14]'" /></td><td><span style="color:red">必须数字</span></td>
+                </tr>
+                <tr>
+                    <td><label for="txtEmail">邮箱</label></td>   <!--data-options="validType:'email'"-->
+                    <td><input class="easyui-validatebox" type="text" id="txtEmail" name="txtEmail" data-options="validType:'email'" /></td>
+                </tr>
+                 <tr>
+                    <td><label for="txtCardNo">卡号：</label></td>
+                    <td><input class="easyui-numberbox" type="text" id="txtCardNo" onkeyup="this.value=this.value.replace(/\D/g,'')"   onafterpaste="this.value=this.value.replace(/\D/g,'')"  name="txtCardNo" data-options="validType:'length[1,18]'"  /></td><td><span style="color:red">必须数字</span></td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="text-align:center; padding-top:10px">
+                        <a href="javascript:void(0)" class="easyui-linkbutton" id="btnReg" iconcls="icon-ok" >确定</a>
+                        <a href="javascript:void(0)" class="easyui-linkbutton" iconcls="icon-cancel" onclick="javascript:$('#AddUserDialog').dialog('close')">关闭</a>
+                    </td>
+                </tr>
+            </table>
+        </form>
+
+    </div>
+
+    <!--设置修改的弹出层-->
+    <div id="UpdateUserDialog"  class="easyui-dialog"style="width:400px;height:360px;padding:10px 20px"
+        closed="true" buttons="#dlg-buttons" align="center" >
+       <form id="Form1" method="post" novalidate="novalidate">
+         <table id="tblUpdate">
+                <tr>
+                    <th colspan="2" >修改用户信息</th>
+                </tr>
+                <tr>
+                    <td><label for="txtID">编号：</label></td>
+                    <td><input class="easyui-validatebox" type="text" id="txtUpdateUserID" name="txtUpdateUserID" readonly="true" /></td>
+                </tr>
+                <tr>
+                    <td><label for="txtUserName">姓名：</label></td>
+                    <td><input class="easyui-validatebox" type="text" id="txtUpdateUserName" name="txtUpdateUserName" data-options="required:true,validType:'length[1,20]'" /></td>
+                </tr>
+                <tr>
+                    <td><label for="txtLoginName">登录名：</label></td>
+                    <td><input class="easyui-validatebox" type="text" id="txtUpdateLoginName" url="" name="txtUpdateLoginName" data-options="required:true,validType:'length[1,20]'" /></td>
+                </tr>
+                 <tr>
+                    <td><label for="txtPassword">密码：</label></td>
+                    <td><input class="easyui-numberbox" type="text" id="txtUpdatePassword" name="txtUpdatePassword" data-options="required:true,validType:'length[1,30]'" /></td><td><span style="color:red">必须数字</span></td>
+                </tr>
+                 <tr>
+                    <td><label for="txtPlane">座机</label></td>
+                    <td><input class="easyui-numberbox" type="text" id="txtUpdatePlane" name="txtUpdatePlane" data-options="validType:'length[1,14]'" /></td><td><span style="color:red">必须数字</span></td>
+                </tr>
+                 <tr>
+                    <td><label for="txtPhone">手机</label></td>
+                    <td><input class="easyui-numberbox" type="text" id="txtUpdatePhone" name="txtUpdatePhone" data-options="validType:'length[1,14]'"  /></td><td><span style="color:red">必须数字</span></td>
+                </tr>
+                <tr>
+                    <td><label for="txtEmail">邮箱</label></td>
+                    <td><input class="easyui-validatebox" type="text" id="txtUpdateEmail" name="txtUpdateEmail"  data-options="validType:'email'" /></td>
+                </tr>
+                 <tr>
+                    <td><label for="txtCardNo">卡号：</label></td>
+                    <td><input class="easyui-numberbox" onkeyup="this.value=this.value.replace(/\D/g,'')"   onafterpaste="this.value=this.value.replace(/\D/g,'')" type="text" id="txtUpdateCardNo" name="txtUpdateCardNo" data-options="validType:'length[1,14]'" /></td><td><span style="color:red">必须数字</span></td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="text-align:center">
+                        <!--<input type="button" id="btnUpdate" name="name" value="修改用户" />-->
+                        <a href="javascript:void(0)" class="easyui-linkbutton" id="btnUpdate" iconcls="icon-ok" >确定</a>
+                        <a href="javascript:void(0)" class="easyui-linkbutton" iconcls="icon-cancel" onclick="javascript:$('#UpdateUserDialog').dialog('close')">关闭</a>
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </div>
+</body>
+</html>

@@ -1,0 +1,405 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+     <title>招聘英才管理操作区域</title>
+    <!--引入CSS加Jquery文件-->
+    <link href="../easyUI/themes/default/easyui.css" rel="stylesheet" />
+    <link href="../easyUI/themes/icon.css" rel="stylesheet" />
+   
+
+    <script type="text/javascript" src="../easyUI/jquery-1.8.0.min.js"></script>
+    <script type="text/javascript" src="../easyUI/jquery.easyui.min.js"></script>
+
+    <script type="text/javascript" src="../easyUI/datapattern2.js"></script>
+    <script type[="text/javascript" src="../easyUI/locale/easyui-lang-zh_CN.js"></script>
+     <style type="text/css">
+            #tblAdd {
+                width: 300px;
+            }
+
+            #tblUpdate {
+                width: 300px;
+            }
+    </style>
+
+    <script type="text/javascript">
+        $(function () {
+            //异步加载显示所有的招聘信息
+            initUserList();
+
+            ////实现添加用户信息
+            AddEmployeesList();
+
+            //实现对用户数据的修改信息
+            UpdateEmployeesList();
+
+        });
+
+        //异步加载显示所有的招聘信息
+        function initUserList() {
+            $('#test').datagrid({
+                url: 'EmployeeShowJson.ashx',
+                iconCls: 'icon-save',
+                width: 980,
+                fit: true,
+                height: 420,
+                nowrap: true,
+                autoRowHeight: false,
+                striped: true,
+                collapsible: true,
+                sortName: 'ID',
+                sortOrder: 'asc',
+                remoteSort: false,
+                idField: 'ID',
+                pagination: true,
+                rownumbers: true,
+                onLoadError:function () {
+                    window.location.href = "../../Error.html";
+                },
+                columns: [[
+                     { field: 'ck', checkbox: true, width: 50, align: 'left', rowspan: 2 },
+                     { field: 'ID', title: '编号', width: 50, sortable: true },
+                     { field: 'title', title: '招聘职位', width: 100 },
+                     { field: 'content', title: '内容', width: 100 },
+                     { field: 'people', title: '应聘者', width: 130 },
+                     {  field: 'date', title: '时间', width: 130,
+                         formatter: function (value, row, index) {
+                             return (eval(value.replace(/\/Date\((\d+)\)\//gi, "new Date($1)"))).pattern("yyyy-M-d h:m:s.S");
+                         }
+                     },
+                     { field: 'status', title: '状态', width: 130 },
+                     { field: 'MainPeople', title: '负责人', width: 130 }
+                ]],
+
+                toolbar: [{
+                    id: 'btnadd',
+                    text: '添加',
+                    iconCls: 'icon-add',
+                    handler: function () {
+                        $('#AddEmployeesDialog').dialog('open').dialog('setTitle', '添加招聘信息');
+
+                        // //当用户单击添加的时候首先清空文本框中不的内容
+                        Clear();
+
+                    }
+                }, {
+                    id: 'btncut',
+                    text: '修改',
+                    iconCls: 'icon-cut',
+                    handler: function () {
+                        var RowUpdateEmployeesID = $('#test').datagrid('getSelections');
+                        if (RowUpdateEmployeesID.length == 1) {
+                            //实现绑定数据显示
+                            //alert(RowUpdateEmployeesID[0].ID);
+                            BingEmployeesList();
+                            //alert("1111");
+                            $("#UpdateUserDialog").dialog('open').dialog('setTitle', '修改招聘信息');
+                        }
+                        else {
+                            $.messager.alert("友情提示", "每次只能修改一条，你已经选择了<font color='red'  size='6'>" + RowUpdateEmployeesID.length + "</font>条");
+                        }
+                    }
+                }, '-', {
+                    id: 'btnsave',
+                    text: '删除',
+                    iconCls: 'icon-no',
+                    handler: function () {
+                        var RowDeleteEmployeesID = $('#test').datagrid("getSelections");
+                        if (RowDeleteEmployeesID.length == 1) {
+                            $.messager.confirm("删除信息", "您确认删除该条信息吗？", function (deletrelationship) {
+                                if (deletrelationship) {
+                                    $.post("DeleteEmployees.ashx", { relationShipID: RowDeleteEmployeesID[0].ID }, function (relationdata) {
+                                        if (relationdata == "OK") {
+                                            alert("删除成功");
+                                            $("#test").datagrid('reload') //重新刷新整个页面
+                                            //当删除完成的时候清除掉它的长度
+                                            RowDeleteEmployeesID.length = "";
+                                        }
+                                        else {
+                                            alert("删除失败");
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                        else {
+                            $.messager.alert("友情提示", "每次只能删除一行，你已经选择了<font color='red' size='6'>" + RowDeleteEmployeesID.length + "</font>行");
+                        }
+                    }
+                }]
+            });
+        }
+
+        //异步实现对招聘信息的添加
+        function AddEmployeesList() {
+            // btnPostMessage,txtAddPeople,txtAddDate,txtAddQQMSN,txtAddState,txtAddDemand,txtAddPositionContent,txtAddPosition
+            $("#btnPostMessage").click(function () {
+
+                //首先判断用户输入的内容是否满足要求
+                var validate = $("#ff").form('validate');
+                if (validate == false) {
+                    return false;
+                }
+
+                //读取需要添加的参数
+                var Position = $("#txtAddPosition").val();
+                var Content = $("#txtAddPositionContent").val();
+                var Demand = $("#txtAddDemand").val();
+                var State = $("#txtAddState").val();                
+                //取得easyUI的dataBox控件的值
+                var DateTime = $('#txtAddDate').datebox('getValue');
+
+                var People = $("#txtAddPeople").val();
+                //构建参数传递到后台
+                var AddEmployees = {
+                    Position: Position,
+                    Content: Content,
+                    Demand: Demand,
+                    State: State,
+                    DateTime: DateTime,
+                    People: People
+                };
+                //使用异步添加客服服务联系方式
+                $.post("AddEmployeesList.ashx", AddEmployees, function (date) {
+                    if (date == "OK") {
+                        alert("招聘信息发布成功");
+                        //但添加成功的时候关闭弹出层并且刷新
+                        $("#AddEmployeesDialog").dialog('close');
+                        $("#test").datagrid('reload');
+                    }
+                    else {
+                        alert("招聘信息发布失败，请检查");
+                    }
+                });
+            });
+        };
+
+        //当用户单击添加的时候首先清空文本框中不的内容
+        function Clear() {
+            //txtAddPeople,txtAddDate,txtAddQQMSN,txtAddState,txtAddDemand,txtAddPositionContent,txtAddPosition
+            $("#txtAddPeople").val("");
+            $("#txtAddDate").datebox('setValue', '');
+            $("#txtAddQQMSN").val("");
+            $("#txtAddState").val("");
+            $("#txtAddDemand").val("");
+            $("#txtAddPositionContent").val("");
+            $("#txtAddPosition").val("");
+        }
+
+        //实现对选择数据的加载，第二种方法，使用后台加载
+        function BingEmployeesList() {
+            var RowUpdateEmployeesID = $('#test').datagrid('getSelections');
+            
+            //使用异步实现绑定数据源并且显示在文本框中
+            $.getJSON("GetEmployees.ashx", { relationID: RowUpdateEmployeesID[0].ID }, function (date) {
+                //绑定控件显示数据源
+                //ID, title, content, people, date, status, MainPeople
+                $("#txtUpdateID").val(date.ID);
+                $("#txtUpdatePosition").val(date.title);
+                $("#txtUpdatePositionContent").val(date.content);
+                $("#txtUpdateDemand").val(date.people);
+                $("#txtUpdatePeople").val(date.MainPeople);                
+                $("#txtUpdateState").val(date.status);
+
+                //设置时间的格式
+                var str =(eval(date.Date.replace(/\/Date\((\d+)\)\//gi, "new Date($1)"))).pattern("yyyy-M-d h:m:s");
+
+                $("#txtUpdateDate").datebox('setValue', str);
+
+                
+            });
+        };
+
+
+        //实现对数据的修改信息显示
+        function UpdateEmployeesList() {
+            var RowUpdateEmployeesID = $('#test').datagrid('getSelections');
+            $("#btnUpdateRelationShip").click(function () {
+
+                //对表单的验证
+                var validate = $("#Form1").form('validate');
+                if (validate == false) {
+                    return false;
+                }
+
+                //读取到用户的Id
+                // ID, title, content, people, date, status, MainPeople
+
+                //构造修改的参数
+                var updateEmployeesDate = {
+                    ID: RowUpdateEmployeesID[0].ID,
+                    title: $("#txtUpdatePosition").val(),
+                    content: $("#txtUpdatePositionContent").val(),
+                    people: $("#txtUpdateDemand").val(),
+                    status: $("#txtUpdateState").val(),
+                   
+                    Date: $('#txtUpdateDate').datebox('getValue'),
+                    MainPeople: $("#txtUpdatePeople").val(),
+                };
+                //异步实现了修改信息
+                $.post("UpdateEmployees.ashx", updateEmployeesDate, function (updaterelation) {
+                    if (updaterelation == "OK") {
+                        alert("修改成功");
+                        $("#UpdateUserDialog").dialog('close');
+                        $("#test").datagrid('reload');
+                    }
+                    else {
+                        alert("修改失败");
+                    }
+                });
+            });
+        };
+
+   </script>
+       
+</head>
+<body class="easyui-layout">
+	<div data-options="region:'north',split:true" title="管理员登录" align="center" style="height:100px;padding:10px;">
+		<h1>黑马训练营第三期第九组[王卯东,唐兰文,郭张浩,李宏利，韩迎龙,肖攀]开发，欢迎您的光临</h1>
+	</div>
+
+    <!--左边栏的导航-->
+	<div data-options="region:'west',split:true" title="左导航" style="width:180px;padding:1px;overflow:hidden;">
+		<div class="easyui-accordion" data-options="fit:true,border:false">
+			
+            <!-- 第一个显示区域-->
+            <div title="相识黑马" data-options="selected:true" style="padding:10px;overflow:auto;">
+                <p><a href="../users/adminUser.html">用户管理</a></p>	
+				<p><a href="../Relationship/RelationShipShowJson.html">客服管理</a></p>
+				<p><a href="../Client/TypicClient.htm">典型客户</a></p>
+                <p><a href="../CompanyCulture/CorporateCulture.html">企业文化</a></p>
+                <p><a href="../News/newsList.html">新闻管理</a></p>
+                <p><a href="../Employees/EmployeesList.html">人才管理</a></p>
+			</div>
+
+            <!-- 第二个显示区域-->
+			<div title="网站介绍" style="padding:10px;">
+                <p><a href="../../Index.html" target="_blank">公司首页</a></p>
+                <p><a href="../../Company/Company.aspx" target="_blank">相识黑马</a></p>
+                <p><a href="../../Product/Product.aspx" target="_blank">软件产品</a></p>
+                <p><a href="../../News/News.aspx" target="_blank">新闻中心</a></p>
+                <p><a href="../../Service/Service.aspx" target="_blank">客服服务</a></p>
+                <p><a href="../../Employment/Employment.aspx" target="_blank">人才招聘</a></p>
+                <p><a href="../../Client/Client.aspx" target="_blank">典型客户</a></p>
+                <p><a href="../../Contact/Contact.aspx" target="_blank">联系我们</a></p>
+			</div>
+
+            <!-- 第三个个显示区域-->
+			<div title="小组风采" style="padding:10px">
+                <!--,唐兰文,郭张浩,李宏利，韩迎龙,肖攀-->
+                 <p><a href="javascript:void(0)">组长王卯东</a></p> 
+                 <p><a href="javascript:void(0)">组员唐兰文</a></p>
+                 <p><a href="javascript:void(0)">组员郭张浩</a></p>
+                 <p><a href="javascript:void(0)">组员李宏利</a></p>
+                 <p><a href="javascript:void(0)">组员韩迎龙</a></p>
+                 <p><a href="javascript:void(0)">组员肖攀</a></p>
+                 <p><a href="javascript:void(0)">黑马知己</a></p>
+			</div>
+
+		</div>
+	</div>
+
+    <!--存放内容的主区域-->
+	<div data-options="region:'center'" title="招聘信息管理操作区域" style="overflow:hidden;">
+        <table id="test"></table>
+    </div>
+
+    <!--底部版权信息的导航-->
+    <div data-options="region:'south',split:true"
+        style="height:40px;padding:10px;background:#efefef;" align="center">
+        版权信息  &copy 黑马三期第九组  && WMD，TLW，GZH，LHL，HYL，XP
+	</div> 
+
+    <!--设置添加的弹出层-->
+    <div id="AddEmployeesDialog" class="easyui-dialog" style="width:400px;height:360px;padding:10px 20px"
+			closed="true" buttons="#dlg-buttons" align="center">
+        <form id="ff" method="post" novalidate="novalidate">
+        <table id="tblAdd">
+                <tr>
+                    <th colspan="2" >添加招聘信息</th>
+                </tr>               
+                <tr>
+                    <td><label for="txtAddPosition">招聘职位：</label></td>
+                    <td><input class="easyui-validatebox" type="text" id="txtAddPosition" data-options="required:true,validType:'length[1,200]'" name="txtAddPosition"/></td>
+                </tr>
+                <tr>
+                    <td><label for="txtAddPositionContent">招聘内容：</label></td>
+                    <td><input class="easyui-validatebox" type="text" id="txtAddPositionContent" data-options="required:true" name="txtAddPositionContent" /></td>
+                </tr>
+                 <tr>
+                    <td><label for="txtAddDemand">应聘者：</label></td>
+                    <td><input class="easyui-validatebox" type="text" data-options="required:true,validType:'length[1,30]'" id="txtAddDemand"  name="txtAddDemand" /></td>
+                </tr>
+                <tr>
+                <td><label for="txtAddDate">时间：</label></td>
+                    <td><input class="easyui-datebox" type="text" id="txtAddDate" style="width:163px;" data-options="required:true"  name="txtAddDate" /></td>
+                </tr>
+                 <tr>
+                    <td><label for="txtAddState">状态：</label></td>
+                    <td><input class="easyui-numberbox" type="text" id="txtAddState" name="txtAddState" /></td><td><span style="color:red">数字0-9</span></td>
+                </tr>
+                <tr>
+                    <td><label for="txtAddPeople">负责人：</label></td>
+                    <td><input class="easyui-validatebox" type="text" id="txtAddPeople" name="txtAddPeople" data-options="validType:'length[1,20]'" /></td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="text-align:center">
+                        <!--<input type="button" id="btnPostMessage" name="name" value="注册客服联系" />-->
+                        <a href="javascript:void(0)" class="easyui-linkbutton" id="btnPostMessage" iconcls="icon-ok" >发布招聘</a>
+                        <a href="javascript:void(0)" class="easyui-linkbutton" iconcls="icon-cancel" onclick="javascript:$('#AddEmployeesDialog').dialog('close')">关闭</a>
+                    </td>
+                </tr>
+            </table>
+        </form>
+
+    </div>
+
+    <!--设置修改的弹出层-->
+    <div id="UpdateUserDialog"  class="easyui-dialog"style="width:400px;height:360px;padding:10px 20px"
+        closed="true" buttons="#dlg-buttons" align="center" >
+       <form id="Form1" method="post" novalidate="novalidate">
+         <table id="tblUpdate">
+                <tr>
+                    <th colspan="2" >修改招聘信息</th>
+                </tr>
+                 <tr>
+                    <td><label for="txtUpdateID">编号：</label></td>
+                    <td><input class="easyui-validatebox" type="text" id="txtUpdateID" name="txtUpdateID" readonly="true"  /></td>
+                </tr>
+                <tr>
+                    <td><label for="txtUpdatePosition">招聘职位：</label></td>
+                    <td><input class="easyui-validatebox" type="text" id="txtUpdatePosition" data-options="required:true,validType:'length[1,200]'" name="txtUpdatePosition"/></td>
+                </tr>
+                <tr>
+                    <td><label for="txtUpdatePositionContent">招聘内容：</label></td>
+                    <td><input class="easyui-validatebox" type="text" id="txtUpdatePositionContent" data-options="required:true" name="txtUpdatePositionContent" /></td>
+                </tr>
+                 <tr>
+                    <td><label for="txtUpdateDemand">应聘者：</label></td>
+                    <td><input class="easyui-validatebox" type="text" id="txtUpdateDemand" data-options="validType:'length[1,3]'"  name="txtUpdateDemand" /></td>
+                </tr>
+                <tr>
+                <td><label for="txtUpdateDate">时间：</label></td>
+                    <td><input class="easyui-datebox" type="text" id="txtUpdateDate" style="width:163px;" data-options="required:true"  name="txtUpdateDate" /></td>
+                </tr>
+                 <tr>
+                    <td><label for="txtUpdateState">状态：</label></td>
+                    <td><input class="easyui-numberbox" type="text" id="txtUpdateState" name="txtUpdateState" /></td><td><span style="color:red">数字0-9</span></td>
+                </tr>                           
+                <tr>
+                    <td><label for="txtUpdatePeople">负责人：</label></td>
+                    <td><input class="easyui-validatebox" type="text" id="txtUpdatePeople" name="txtUpdatePeople" data-options="validType:'length[1,20]'" /></td>
+                </tr>
+
+                <tr>
+                    <td colspan="2" style="text-align:center">
+                        <a href="javascript:void(0)" class="easyui-linkbutton" id="btnUpdateRelationShip" iconcls="icon-ok" >修改发布</a>
+                        <a href="javascript:void(0)" class="easyui-linkbutton" iconcls="icon-cancel" onclick="javascript:$('#UpdateUserDialog').dialog('close')">关闭</a>
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </div>
+</body>
+</html>

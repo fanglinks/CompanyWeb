@@ -1,0 +1,53 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LYSC.CompanyWeb.DAL", "LYSC.CompanyWeb.DAL\LYSC.CompanyWeb.DAL.csproj", "{6DBA1C6E-F739-4D72-85C7-743B125514E4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LYSC.CompanyWeb.Model", "LYSC.CompanyWeb.Model\LYSC.CompanyWeb.Model.csproj", "{75CF5C15-99DA-4910-9F3F-F36EC2590011}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LYSC.CompanyWeb.BLL", "LYSC.CompanyWeb.BLL\LYSC.CompanyWeb.BLL.csproj", "{85B78A5D-4334-47A1-BB19-70945529C634}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LYSC.CompanyWeb.Common", "LYSC.CompanyWeb.Common\LYSC.CompanyWeb.Common.csproj", "{10B0B413-4E22-4B14-BCBD-571F2DF3CA7D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LYSC.CompanyWeb.DBUtitly", "LYSC.CompanyWeb.DBUtitly\LYSC.CompanyWeb.DBUtitly.csproj", "{5657C375-3BA1-4309-8FF2-02796DE4154B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LYSC.CompanyWeb.UI", "LYSC.CompanyWeb.UI\LYSC.CompanyWeb.UI.csproj", "{9E4D3261-2AE2-47B7-BAF0-7F4F55B6B377}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6DBA1C6E-F739-4D72-85C7-743B125514E4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6DBA1C6E-F739-4D72-85C7-743B125514E4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6DBA1C6E-F739-4D72-85C7-743B125514E4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6DBA1C6E-F739-4D72-85C7-743B125514E4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{75CF5C15-99DA-4910-9F3F-F36EC2590011}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{75CF5C15-99DA-4910-9F3F-F36EC2590011}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{75CF5C15-99DA-4910-9F3F-F36EC2590011}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{75CF5C15-99DA-4910-9F3F-F36EC2590011}.Release|Any CPU.Build.0 = Release|Any CPU
+		{85B78A5D-4334-47A1-BB19-70945529C634}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{85B78A5D-4334-47A1-BB19-70945529C634}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{85B78A5D-4334-47A1-BB19-70945529C634}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{85B78A5D-4334-47A1-BB19-70945529C634}.Release|Any CPU.Build.0 = Release|Any CPU
+		{10B0B413-4E22-4B14-BCBD-571F2DF3CA7D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{10B0B413-4E22-4B14-BCBD-571F2DF3CA7D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{10B0B413-4E22-4B14-BCBD-571F2DF3CA7D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{10B0B413-4E22-4B14-BCBD-571F2DF3CA7D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5657C375-3BA1-4309-8FF2-02796DE4154B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5657C375-3BA1-4309-8FF2-02796DE4154B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5657C375-3BA1-4309-8FF2-02796DE4154B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5657C375-3BA1-4309-8FF2-02796DE4154B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9E4D3261-2AE2-47B7-BAF0-7F4F55B6B377}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9E4D3261-2AE2-47B7-BAF0-7F4F55B6B377}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9E4D3261-2AE2-47B7-BAF0-7F4F55B6B377}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9E4D3261-2AE2-47B7-BAF0-7F4F55B6B377}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
+	EndGlobalSection
+EndGlobal

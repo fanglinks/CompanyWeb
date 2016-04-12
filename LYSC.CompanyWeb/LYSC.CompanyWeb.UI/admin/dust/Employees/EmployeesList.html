@@ -1,0 +1,216 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title></title>
+    <!--引用EasyUI的CSS文件-->
+    <link type="text/css" href="../easyUI/themes/default/easyui.css" rel="stylesheet" />
+    <link type="text/css" href="../easyUI/themes/icon.css" rel="stylesheet" />
+
+    <!--引用EasyUI的Jquery文件-->
+    <script type="text/javascript" src="../easyUI/jquery-1.8.0.min.js"></script>
+    <script type="text/javascript" src="../easyUI/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="../easyUI/datapattern2.js"></script>
+    <script type="text/javascript" src="../easyUI/locale/easyui-lang-zh_CN.js"></script>
+    <style type="text/css">
+        #tblAdd {
+            width: 300px;
+        }
+
+        #tblUpdate {
+            width: 300px;
+        }
+    </style>
+
+    <script type="text/javascript">
+
+        $(function () {
+            //异步加载显示所有的用户信息
+            initEmeloyeesList();
+
+        });
+
+        //异步加载显示所有的用户信息
+        function initEmeloyeesList() {
+            $('#test').datagrid({
+                url: 'EmployeeShowJson1.ashx',
+                iconCls: 'icon-save',
+                width: 980,
+                fit: true,
+                height: 420,
+                nowrap: true,
+                autoRowHeight: false,
+                striped: true,
+                collapsible: true,
+                sortName: 'ID',
+                sortOrder: 'asc',
+                remoteSort: false,
+                idField: 'ID',
+                pagination: true,
+                rownumbers: true,
+
+                columns: [[            
+                    { field: 'ck', checkbox: true, width: 50, align: 'left', rowspan: 2 },
+                    { field: 'ID', title: '编号', width: 50, sortable: true },
+                    { field: 'title', title: '标题', width: 100 },
+                    { field: 'content', title: '内容', width: 100 },
+                    { field: 'people', title: '应聘者', width: 130 },
+                    {
+                        field: 'date', title: '时间', width: 130,
+                        formatter: function (value, row, index) {
+                            return (eval(value.replace(/\/Date\((\d+)\)\//gi, "new Date($1)"))).pattern("yyyy-M-d h:m:s.S");
+                        }
+                    },
+                    { field: 'status', title: '状态', width: 130 },
+                    { field: 'MainPeople', title: '负责人', width: 130 }
+                ]],
+
+                toolbar: [ {
+                    id: 'btncut',
+                    text: '修改',
+                    iconCls: 'icon-cut',
+                    handler: function () {
+                        var RowUpdateUserID = $('#test').datagrid('getSelections');
+
+                        if (RowUpdateUserID.length == 1) {
+                            //实现绑定数据显示
+                            //BindUserList();
+
+                            $("#UpdateUserDialog").dialog('open').dialog('setTitle', '修改用户信息');
+
+                            //实现对用户数据的修改信息
+                            //UpdateUserList();
+                        }
+                        else {
+                            $.messager.alert("友情提示", "每次只能修改一条，你已经选择了<font color='red'  size='6'>" + RowUpdateUserID.length + "</font>条", "error");
+                        }
+                    }
+                }, '-', {
+                    id: 'btnsave',
+                    text: '删除',
+                    iconCls: 'icon-no',
+                    handler: function () {
+                        var RowDeleteUserID = $('#test').datagrid("getSelections");
+                        if (RowDeleteUserID.length == 1) {
+                            $.messager.confirm("删除信息", "您确认删除该条信息吗？", function (deleteuser) {
+                                //if (deleteuser) {
+                                //    $.post("DeleteUserJson.ashx", { userID: RowDeleteUserID[0].ID }, function (data) {
+                                //        if (data == "OK") {
+                                //            $("#test").datagrid('reload') //重新刷新整个页面
+                                //            alert("删除成功");
+                                //            //当删除完成的时候清除掉它的长度
+                                //            RowDeleteUserID.length = "";
+                                //        }
+                                //        else {
+                                //            alert("删除失败");
+                                //        }
+                                //    });
+                                //}
+                            });
+                        }
+                        else {
+                            $.messager.alert("友情提示", "每次只能删除一行，你已经选择了<font color='red' size='6'>" + RowDeleteUserID.length + "</font>行", "error");
+                        }
+                    }
+                }]
+            });
+        }
+
+
+
+        //实现对节点的添加功能
+        var index = 0;
+        function addTab() {
+            index++;
+            $('#tt').tabs('add', {
+                title: '招聘信息' + index,
+                content: 'T招聘信息主体内容 ' + index,
+                iconCls: 'icon-save',
+                closable: true,   //控制是否可以删除信息
+                //tools: [{   //显示的单击弹出层的效果
+                //    iconCls: 'icon-mini-refresh',
+                //    handler: function () {
+                //        alert('refresh');
+                //    }
+                //}]
+            });
+        }
+    </script>
+
+
+
+</head>
+<body class="easyui-layout">
+	<div data-options="region:'north',split:true" title="管理员登录" align="center" style="height:100px; padding:10px;">
+		<h1>黑马训练营第三期第九组[王卯东,唐兰文,郭张浩,李宏利，韩迎龙,肖攀]开发，欢迎您的光临</h1>
+	</div>
+
+    <!--左边栏的导航-->
+	<div data-options="region:'west',split:true" title="左导航" style="width:180px;padding:1px;overflow:hidden;">
+		<div class="easyui-accordion" data-options="fit:true,border:false">
+			<!-- 第一个显示区域-->
+            <div title="相识黑马" data-options="selected:true" style="padding:10px;overflow:auto;">
+                <p><a href="adminUser.html">用户管理</a></p>	
+				<p><a href="../Relationship/RelationShipShowJson.html">客服管理</a></p>
+				<p><a href="../Client/TypicClient.htm">典型客户</a></p>
+                <p><a href="../CompanyCulture/CorporateCulture.html">企业文化</a></p>
+                <p><a href="../News/newsList.html">新闻管理</a></p>
+                <p><a href="EmployeesList.html">人才管理</a></p>
+			</div>
+
+            <!-- 第二个显示区域-->
+			<div title="网站介绍" style="padding:10px;">
+                <p><a href="../../Index.html" target="_blank">公司首页</a></p>
+                <p><a href="../../Company/Company.aspx" target="_blank">相识黑马</a></p>
+                <p><a href="../../Product/Product.aspx" target="_blank">软件产品</a></p>
+                <p><a href="../../News/News.aspx" target="_blank">新闻中心</a></p>
+                <p><a href="../../Service/Service.aspx" target="_blank">客服服务</a></p>
+                <p><a href="../../Employment/Employment.aspx" target="_blank">人才招聘</a></p>
+                <p><a href="../../Client/Client.aspx" target="_blank">典型客户</a></p>
+                <p><a href="../../Contact/Contact.aspx" target="_blank">联系我们</a></p>
+			</div>
+
+            <!-- 第三个个显示区域-->
+			<div title="小组风采" style="padding:10px">
+                <!--,唐兰文,郭张浩,李宏利，韩迎龙,肖攀-->
+                 <p><a href="javascript:void(0)">组长王卯东</a></p> 
+                 <p><a href="javascript:void(0)">组员唐兰文</a></p>
+                 <p><a href="javascript:void(0)">组员郭张浩</a></p>
+                 <p><a href="javascript:void(0)">组员李宏利</a></p>
+                 <p><a href="javascript:void(0)">组员韩迎龙</a></p>
+                 <p><a href="javascript:void(0)">组员肖攀</a></p>
+                 <p><a href="javascript:void(0)">黑马知己</a></p>
+			</div>
+            <!--第四个tab练习学习 -->
+            <div title="Tab风采" style="padding:10px">
+                 <a data-options="iconCls:'icon-add'" href="javascript:void(0)" onclick="addTab()">添加节点</a>
+			</div>
+		</div>
+	</div>
+
+    <!--存放内容的主区域-->
+	<div data-options="region:'center'" title="招聘英才管理操作区域" style="overflow:hidden;">
+        <div id="tt" class="easyui-tabs" data-options="tools:'#tab-tools'" style="width:1050px;height:450px;">
+		<div title="详细信息" data-options="iconCls:'icon-tip'">
+			<table id="test"></table>
+		</div>
+		<div title="添加信息" data-options="closable:true,iconCls:'icon-add'" style="padding:10px;">
+			添加招聘信息
+		</div>
+        <div title="修改信息" data-options="closable:true,iconCls:'icon-cut'" style="padding:10px;">
+			修改招聘信息
+		</div>
+        <div title="滚动效果" data-options="closable:true,cache:false,href:'tabs_href_test.html'" style="padding:20px;">
+			滚动效果
+		</div>
+	</div>
+    </div>
+
+    <!--底部版权信息的导航-->
+    <div data-options="region:'south',split:true"
+        style="height:40px;padding:10px;background:#efefef;" align="center">
+        版权信息  &copy 黑马三期第九组  && WMD，TLW，GZH，LHL，HYL，XP
+	</div>
+
+</body>
+</html>

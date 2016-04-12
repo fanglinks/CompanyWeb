@@ -1,0 +1,6 @@
+System.FormatException: 该字符串未被识别为有效的 DateTime。
+   在 System.DateTimeParse.Parse(String s, DateTimeFormatInfo dtfi, DateTimeStyles styles)
+   在 System.Convert.ToDateTime(String value)
+   在 LYSC.CompanyWeb.UI.admin.Employees.AddEmployeesList.ProcessRequest(HttpContext context) 位置 f:\heima\practice\LYSC.CompanyWeb\LYSC.CompanyWeb.UI\admin\Employees\AddEmployeesList.ashx.cs:行号 31
+   在 System.Web.HttpApplication.CallHandlerExecutionStep.System.Web.HttpApplication.IExecutionStep.Execute()
+   在 System.Web.HttpApplication.ExecuteStep(IExecutionStep step, Boolean& completedSynchronously)

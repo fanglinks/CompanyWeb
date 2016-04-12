@@ -1,0 +1,428 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+     <title>客服联系方式管理页面</title>
+    <!--引入CSS加Jquery文件-->
+    <link href="../easyUI/themes/default/easyui.css" rel="stylesheet" />
+    <link href="../easyUI/themes/icon.css" rel="stylesheet" />
+   
+
+    <script type="text/javascript" src="../easyUI/jquery-1.8.0.min.js"></script>
+    <script type="text/javascript" src="../easyUI/jquery.easyui.min.js"></script>
+
+    <script type="text/javascript" src="../easyUI/datapattern2.js"></script>
+    <script type[="text/javascript" src="../easyUI/locale/easyui-lang-zh_CN.js"></script>
+     <style type="text/css">
+            #tblAdd {
+                width: 300px;
+            }
+
+            #tblUpdate {
+                width: 300px;
+            }
+    </style>
+
+    <script type="text/javascript">
+        $(function () {
+            //异步加载显示所有的用户信息
+            initUserList();
+
+            //添加信息
+            AddRelationShipList();
+
+            //修改信息
+            UpdateRelationShipList();
+
+        });
+
+        //异步加载显示所有的用户信息
+        function initUserList() {
+            $('#test').datagrid({
+                url: 'RelationShipListShowJson.ashx',
+                iconCls: 'icon-save',
+                width: 1100,
+                fit: true,
+                height: 420,
+                nowrap: true,
+                autoRowHeight: false,
+                striped: true,
+                collapsible: true,
+                sortName: 'ID',
+                sortOrder: 'asc',
+                remoteSort: false,
+                idField: 'ID',
+                pagination: true,
+                rownumbers: true,
+                onLoadError: function () {  //当页面错误的时候跳转页面
+                    window.location.href = '../../Error.html';
+                },
+                columns: [[
+                    //"ID":5,"Address":"华科世家","Zip":"100085","plane":"010-59713273","Fax":"010-59713273",
+                    //"QQ_MSN":"1023628250","Date":"\/Date(1251266694000)\/","people":"王志学"
+                    { field: 'ck', checkbox: true, width: 50, align: 'left' },
+                    { field: 'ID', title: '编号', width: 50, sortable: true },
+                    { field: 'Address', title: '公司名称', width: 200 },
+                    { field: 'Zip', title: '压缩', width: 100 },
+                    { field: 'plane', title: '电话', width: 130 },
+                    { field: 'Fax', title: '传真', width: 130 },
+                    { field: 'QQ_MSN', title: 'QQMSN', width: 130 },
+                    {
+                        field: 'Date', title: '时间', width: 150,
+                        formatter: function (value, row, index) {
+                            return (eval(value.replace(/\/Date\((\d+)\)\//gi, "new Date($1)"))).pattern("yyyy-M-d h:m:s.S");
+                        }
+                    },
+                    { field: 'people', title: '负责人', width: 100 }
+                ]],
+                toolbar: [{
+                    id: 'btnadd',
+                    text: '添加',
+                    iconCls: 'icon-add',
+                    handler: function () {
+                        $('#AddRelationShipDialog').dialog('open').dialog('setTitle', '添加客服联系方式信息');
+
+                        //当用户单击添加的时候首先清空文本框中不的内容
+                        Clear();
+                        //实现添加用户信息
+                        //AddRelationShipList();
+                        return false;
+                    }
+                }, '-', {
+                    id: 'btncut',
+                    text: '修改',
+                    iconCls: 'icon-cut',
+                    handler: function () {
+                        var RowUpdateRelationShipID = $('#test').datagrid('getSelections');
+                        if (RowUpdateRelationShipID.length == 1) {
+                            //实现绑定数据显示
+                            BindRelationShipList();
+
+                            $("#UpdateUserDialog").dialog('open').dialog('setTitle', '修改用户信息');
+
+                            //实现对用户数据的修改信息
+                            UpdateRelationShipList();
+                        }
+                        else {
+                            $.messager.alert("友情提示", "每次只能修改一条，你已经选择了<font color='red'  size='6'>" + RowUpdateRelationShipID.length + "</font>条");
+                        }
+                    }
+                }, '-', {
+                    id: 'btnsave',
+                    text: '删除',
+                    iconCls: 'icon-no',
+                    handler: function () {
+                        var RowDeleteRelationShipID = $('#test').datagrid("getSelections");
+                        if (RowDeleteRelationShipID.length == 1) {
+                            $.messager.confirm("删除信息", "您确认删除该条信息吗？", function (deletrelationship) {
+                                if (deletrelationship) {
+                                    $.post("DeleteRelationShipJson.ashx", { relationShipID: RowDeleteRelationShipID[0].ID }, function (relationdata) {
+                                        if (relationdata == "OK") {
+                                            alert("删除成功");
+                                            $("#test").datagrid('reload') //重新刷新整个页面
+                                            //当删除完成的时候清除掉它的长度
+                                            RowDeleteRelationShipID.length = "";
+                                        }
+                                        else {
+                                            alert("删除失败");
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                        else {
+                            $.messager.alert("友情提示", "每次只能删除一行，你已经选择了<font color='red' size='6'>" + RowDeleteRelationShipID.length + "</font>行");
+                        }
+                    }
+                }]
+            });
+        }
+
+        //异步实现对客服联系管理的添加
+        function AddRelationShipList() {
+            // btnRealitionShipReg,txtAddPeople,txtAddDate,txtAddQQMSN,txtAddFax,txtAddPlane,txtAddZip,txtAddAddress
+            $("#btnRealitionShipReg").click(function () {
+
+                //首先判断用户输入的内容是否满足要求
+                var validate = $("#ff").form('validate');
+                if (validate == false) {
+                    return false;
+                }
+
+                //读取需要添加的参数
+                var AddRess = $("#txtAddAddress").val();
+                var AddZip = $("#txtAddZip").val();
+                var Plane = $("#txtAddPlane").val();
+                var Fax = $("#txtAddFax").val();
+                var QQMSN = $("#txtAddQQMSN").val();
+                //取得easyUI的dataBox控件的值
+                var DateTime = $('#txtAddDate').datebox('getValue');
+
+                var People = $("#txtAddPeople").val();
+                //构建参数传递到后台
+                var AddRelationShip = {
+                    AddRess: AddRess,
+                    AddZip: AddZip,
+                    Plane: Plane,
+                    Fax: Fax,
+                    QQMSN: QQMSN,
+                    DateTime: DateTime,
+                    People: People
+                };
+                //使用异步添加客服服务联系方式
+                $.post("AddRelationShipList.ashx", AddRelationShip, function (date) {
+                    if (date == "OK") {
+                        alert("添加客服联系方式成功");
+                        //但添加成功的时候关闭弹出层并且刷新
+                        $("#AddRelationShipDialog").dialog('close');
+                        $("#test").datagrid('reload');
+                        return false;
+                    }
+                    else {
+                        alert("添加客服联系方式失败，请检查");
+                    }
+                });
+            });
+        };
+
+        //当用户单击添加的时候首先清空文本框中不的内容
+        function Clear() {
+            //txtAddPeople,txtAddDate,txtAddQQMSN,txtAddFax,txtAddPlane,txtAddZip,txtAddAddress
+            $("#txtAddPeople").val("");
+            $("#txtAddDate").datebox('setValue', '');
+            $("#txtAddQQMSN").val("");
+            $("#txtAddFax").val("");
+            $("#txtAddPlane").val("");
+            $("#txtAddZip").val("");
+            $("#txtAddAddress").val("");
+        }
+
+        //实现对选择数据的加载，第二种方法，使用后台加载
+        function BindRelationShipList() {
+            var RowUpdateRelationShipID = $('#test').datagrid('getSelections');
+
+            //使用异步实现绑定数据源并且显示在文本框中
+            $.getJSON("GetRelationShip.ashx", { relationID: RowUpdateRelationShipID[0].ID }, function (date) {
+                //绑定控件显示数据源
+                //"ID":5,"Address":"华科世家","Zip":"100085","plane":"010-59713273","Fax":"010-59713273","QQ_MSN":"1023628250",
+                //"Date":"\/Date(1251266694000)\/","people":"王志学"
+                //btnUpdateRelationShip,txtUpdateID,txtUpdateZip,txtUpdateLoginPlane,
+                //txtUpdateFax, txtUpdateQQMSN, txtUpdateDate, txtUpdatePeople,txtUpdateAddress
+                $("#txtUpdateID").val(date.ID);
+                $("#txtUpdateAddress").val(date.Address);
+                $("#txtUpdateZip").val(date.Zip);
+                $("#txtUpdateLoginPlane").val(date.plane);
+                $("#txtUpdateFax").val(date.Fax);
+                $("#txtUpdateQQMSN").val(date.QQ_MSN);
+                //$("#txtUpdateDate").datebox(date.date);
+
+                //设置时间的格式
+                var str =(eval(date.Date.replace(/\/Date\((\d+)\)\//gi, "new Date($1)"))).pattern("yyyy-M-d h:m:s");
+
+                $("#txtUpdateDate").datebox('setValue', str);
+
+                $("#txtUpdatePeople").val(date.people);
+            });
+        };
+
+        //实现对数据的修改信息显示
+        function UpdateRelationShipList() {
+            var RowUpdateRelationShipID = $('#test').datagrid('getSelections');
+            $("#btnUpdateRelationShip").click(function () {
+
+                //对表单的验证
+                var validate = $("#Form1").form('validate');
+                if (validate == false) {
+                    return false;
+                }
+
+                //读取到用户的Id
+                // //btnUpdateRelationShip,txtUpdateID,txtUpdateAddress, txtUpdateZip,txtUpdateLoginPlane,
+                //txtUpdateFax, txtUpdateQQMSN, txtUpdateDate, txtUpdatePeople
+
+                //构造修改的参数
+                var updateRelationShipDate = {
+                    ID: RowUpdateRelationShipID[0].ID,
+                    Address: $("#txtUpdateAddress").val(),
+                    Zip: $("#txtUpdateZip").val(),
+                    Plane: $("#txtUpdateLoginPlane").val(),
+                    Fax: $("#txtUpdateFax").val(),
+                    QQMSN: $("#txtUpdateQQMSN").val(),
+                    Date: $('#txtUpdateDate').datebox('getValue'),
+                    people: $("#txtUpdatePeople").val(),
+                };
+                //异步实现了修改信息
+                $.post("UpdateRelationShip.ashx", updateRelationShipDate, function (updaterelation) {
+                    if (updaterelation == "OK") {
+                        alert("修改成功");
+                        $("#UpdateUserDialog").dialog('close');
+                        $("#test").datagrid('reload');
+                    }
+                    else {
+                        alert("修改失败");
+                    }
+                });
+            });
+        };
+
+   </script>
+       
+</head>
+<body class="easyui-layout">
+	<div data-options="region:'north',split:true" title="管理员登录" align="center" style="height:100px;padding:10px;">
+		<h1>黑马训练营第三期第九组[王卯东,唐兰文,郭张浩,李宏利，韩迎龙,肖攀]开发，欢迎您的光临</h1>
+	</div>
+
+    <!--左边栏的导航-->
+	<div data-options="region:'west',split:true" title="左导航" style="width:180px;padding:1px;overflow:hidden;">
+		<div class="easyui-accordion" data-options="fit:true,border:false">
+			
+            <!-- 第一个显示区域-->
+            <div title="相识黑马" data-options="selected:true" style="padding:10px;overflow:auto;">
+                <p><a href="../users/adminUser.html">用户管理</a></p>	
+				<p><a href="../Relationship/RelationShipShowJson.html">客服管理</a></p>
+				<p><a href="../Client/TypicClient.htm">典型客户</a></p>
+                <p><a href="../CompanyCulture/CorporateCulture.html">企业文化</a></p>
+                <p><a href="../News/newsList.html">新闻管理</a></p>
+                <p><a href="../Employees/EmployeesList.html">人才管理</a></p>
+			</div>
+
+            <!-- 第二个显示区域-->
+			<div title="网站介绍" style="padding:10px;">
+                <p><a href="../../Index.html" target="_blank">公司首页</a></p>
+                <p><a href="../../Company/Company.aspx" target="_blank">相识黑马</a></p>
+                <p><a href="../../Product/Product.aspx" target="_blank">软件产品</a></p>
+                <p><a href="../../News/News.aspx" target="_blank">新闻中心</a></p>
+                <p><a href="../../Service/Service.aspx" target="_blank">客服服务</a></p>
+                <p><a href="../../Employment/Employment.aspx" target="_blank">人才招聘</a></p>
+                <p><a href="../../Client/Client.aspx" target="_blank">典型客户</a></p>
+                <p><a href="../../Contact/Contact.aspx" target="_blank">联系我们</a></p>
+			</div>
+
+            <!-- 第三个个显示区域-->
+			<div title="小组风采" style="padding:10px">
+                <!--,唐兰文,郭张浩,李宏利，韩迎龙,肖攀-->
+                 <p><a href="javascript:void(0)">组长王卯东</a></p> 
+                 <p><a href="javascript:void(0)">组员唐兰文</a></p>
+                 <p><a href="javascript:void(0)">组员郭张浩</a></p>
+                 <p><a href="javascript:void(0)">组员李宏利</a></p>
+                 <p><a href="javascript:void(0)">组员韩迎龙</a></p>
+                 <p><a href="javascript:void(0)">组员肖攀</a></p>
+                 <p><a href="javascript:void(0)">黑马知己</a></p>
+			</div>
+
+		</div>
+	</div>
+
+    <!--存放内容的主区域-->
+	<div data-options="region:'center'" title="客服联系方式管理操作区域" style="overflow:hidden;">
+        <table id="test"></table>
+    </div>
+
+    <!--底部版权信息的导航-->
+    <div data-options="region:'south',split:true"
+        style="height:40px;padding:10px;background:#efefef;" align="center">
+        版权信息  &copy 黑马三期第九组  && WMD，TLW，GZH，LHL，HYL，XP
+	</div> 
+
+    <!--设置添加的弹出层-->
+    <div id="AddRelationShipDialog" class="easyui-dialog" style="width:400px;height:360px;padding:10px 20px"
+			closed="true" buttons="#dlg-buttons" align="center">
+        <form id="ff" method="post" novalidate="novalidate">
+        <table id="tblAdd">
+                <tr>
+                    <th colspan="2" >添加客服联系方式信息</th>
+                </tr>
+                <tr>
+                    <td><label for="txtAddAddress">公司名称：</label></td>
+                    <td><input class="easyui-validatebox" type="text" id="txtAddAddress" data-options="required:true,validType:'length[1,50]'" name="txtAddAddress"/></td>
+                </tr>
+                <tr>
+                    <td><label for="txtAddZip">邮编：</label></td>
+                    <td><input class="easyui-numberbox" type="text" id="txtAddZip" data-options="validType:'length[1,6]'" name="txtAddZip" /></td><td><span style="color:red">必须数字</span></td>
+                </tr>
+                 <tr>
+                    <td><label for="txtAddPlane">电话</label></td>
+                    <td><input class="easyui-numberbox" type="text" id="txtAddPlane"  name="txtAddPlane" data-options="validType:'length[1,20]'" /></td><td><span style="color:red">必须数字</span></td>
+                </tr>
+                 <tr>
+                    <td><label for="txtAddFax">传真</label></td>
+                    <td><input class="easyui-numberbox" type="text" id="txtAddFax" name="txtAddFax" data-options="validType:'length[1,20]'" /></td><td><span style="color:red">必须数字</span></td>
+                </tr>
+                <tr>
+                    <td><label for="txtAddQQMSN">QQMSN</label></td>
+                    <td><input class="easyui-numberbox" type="text" id="txtAddQQMSN" data-options="validType:'length[1,30]'" name="txtAddQQMSN" /></td><td><span style="color:red">必须数字</span></td>
+                </tr>
+                <tr>
+                <td><label for="txtAddDate">时间：</label></td>
+                    <td><input class="easyui-datebox" type="text" id="txtAddDate" style="width:163px;"  name="txtAddDate" /></td>
+                </tr>
+                <tr>
+                    <td><label for="txtAddPeople">负责人姓名：</label></td>
+                    <td><input class="easyui-validatebox" type="text" id="txtAddPeople" name="txtAddPeople" data-options="required:true,validType:'length[1,20]'" /></td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="text-align:center">
+                        <!--<input type="button" id="btnRealitionShipReg" name="name" value="注册客服联系" />-->
+                        <a href="javascript:void(0)" class="easyui-linkbutton" id="btnRealitionShipReg" iconcls="icon-ok" >注册客服</a>
+                        <a href="javascript:void(0)" class="easyui-linkbutton" iconcls="icon-cancel" onclick="javascript:$('#AddRelationShipDialog').dialog('close')">关闭</a>
+                    </td>
+                </tr>
+            </table>
+        </form>
+
+    </div>
+
+    <!--设置修改的弹出层-->
+    <div id="UpdateUserDialog"  class="easyui-dialog"style="width:400px;height:360px;padding:10px 20px"
+        closed="true" buttons="#dlg-buttons" align="center" >
+       <form id="Form1" method="post" novalidate="novalidate">
+         <table id="tblUpdate">
+                <tr>
+                    <th colspan="2" >修改客服联系方式信息</th>
+                </tr>
+                <tr>
+                    <td><label for="txtUpdateID">卡号：</label></td>
+                    <td><input class="easyui-validatebox" type="text" id="txtUpdateID" name="txtUpdateID" readonly="true"  /></td>
+                </tr>
+                <tr>
+                    <td><label for="txtUpdateAddress">公司名称：</label></td>
+                    <td><input class="easyui-validatebox" type="text" id="txtUpdateAddress" name="txtUpdateAddress" data-options="required:true,validType:'length[1,50]'" /></td>
+                </tr>
+                <tr>
+                    <td><label for="txtUpdateZip">邮编：</label></td>
+                    <td><input class="easyui-validatebox" type="text" id="txtUpdateZip" name="txtUpdateZip" data-options="validType:'length[1,6]'" /></td><td><span style="color:red">必须数字</span></td>
+                </tr>
+                <tr>
+                    <td><label for="txtUpdateLoginPlane">电话：</label></td>
+                    <td><input class="easyui-validatebox" type="text" id="txtUpdateLoginPlane" name="txtUpdateLoginPlane" data-options="validType:'length[1,20]'" /></td><td><span style="color:red">必须数字</span></td>
+                </tr>
+                 <tr>
+                    <td><label for="txtUpdateFax">传真：</label></td>
+                    <td><input class="easyui-validatebox" type="text" id="txtUpdateFax" name="txtUpdateFax"  data-options="validType:'length[1,20]'" /></td><td><span style="color:red">必须数字</span></td>
+                </tr>
+                 <tr>
+                    <td><label for="txtUpdateQQMSN">QQMSN：</label></td>
+                    <td><input class="easyui-validatebox" type="text" id="txtUpdateQQMSN" name="txtUpdateQQMSN" data-options="validType:'length[1,30]'" /></td><td><span style="color:red">必须数字</span></td>
+                </tr>
+                <tr>
+                    <td><label for="txtAddDate">时间：</label></td>
+                    <td><input class="easyui-datebox" type="text" id="txtUpdateDate" style="width:163px;"  name="txtAddDate" /></td>
+                </tr>
+                <tr>
+                    <td><label for="txtUpdatePeople">负责人姓名：</label></td>
+                    <td><input class="easyui-validatebox" type="text" id="txtUpdatePeople" name="txtUpdatePeople" data-options="required:true,validType:'length[1,20]'" /></td>
+                </tr>
+
+                <tr>
+                    <td colspan="2" style="text-align:center">
+                        <!--<input type="button" id="btnUpdateRelationShip" name="name" value="修改用户" />-->
+                        <a href="javascript:void(0)" class="easyui-linkbutton" id="btnUpdateRelationShip" iconcls="icon-ok" >修改用户</a>
+                        <a href="javascript:void(0)" class="easyui-linkbutton" iconcls="icon-cancel" onclick="javascript:$('#UpdateUserDialog').dialog('close')">关闭</a>
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </div>
+</body>
+</html>
