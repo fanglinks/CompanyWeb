@@ -6,14 +6,14 @@
 </asp:Content>
 <asp:Content ID="Content2" ContentPlaceHolderID="Content" runat="server">
     <table style="width: 100%">
-        <tr>
-            <th>ID</th>
-            <th>title</th>
-            <th>content</th>
-            <th>people</th>
-            <th>date</th>
-            <th>status</th>
-            <th>MainPeople</th>
+         <tr>
+            <th>编号</th>
+            <th>招聘职位</th>
+            <th>招聘内容</th>
+            <th>求职要求</th>
+            <th>发布日期</th>
+            <th>状态</th>
+            <th>负责人</th>
         </tr>
 
         <%foreach (var empoyees in Empoyees)
